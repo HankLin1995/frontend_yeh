@@ -1,8 +1,12 @@
 import requests
 from typing import Optional, List, Dict
 from dataclasses import dataclass
+from dotenv import load_dotenv
+import os
 
-BASE_URL = "http://api.civil-manager.com"  # Update this with your actual API base URL
+load_dotenv()
+
+BASE_URL = os.getenv("BASE_URL")
 
 def get_users(skip: int = 0, limit: int = 100):
     response = requests.get(f"{BASE_URL}/users")
