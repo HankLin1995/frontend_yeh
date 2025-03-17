@@ -1,6 +1,4 @@
 import requests
-from typing import Optional, List, Dict
-from dataclasses import dataclass
 from dotenv import load_dotenv
 import os
 
@@ -15,6 +13,16 @@ def get_users(skip: int = 0, limit: int = 100):
 
 def update_user_role(user_id: str, role: str):
     response = requests.patch(f"{BASE_URL}/users/{user_id}/role", json={"Role": role})
+    response.raise_for_status()
+    return response.json()
+
+def get_groups(skip: int = 0, limit: int = 100):
+    response = requests.get(f"{BASE_URL}/groups")
+    response.raise_for_status()
+    return response.json()
+
+def get_cases(skip: int = 0, limit: int = 100):
+    response = requests.get(f"{BASE_URL}/cases")
     response.raise_for_status()
     return response.json()
 

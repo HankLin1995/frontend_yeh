@@ -4,6 +4,7 @@ from api import get_users, update_user_role
 
 st.subheader(" 👨‍👩‍👦‍👦 使用者清單")
 
+@st.cache_data
 def get_users_df():
 
     users=get_users()
