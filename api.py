@@ -26,6 +26,11 @@ def get_cases(skip: int = 0, limit: int = 100):
     response.raise_for_status()
     return response.json()
 
+def get_photos():
+    response = requests.get(f"{BASE_URL}/photos/query")
+    response.raise_for_status()
+    return response.json()
+
 # @dataclass
 # class User:
 #     UserID: str
