@@ -29,6 +29,7 @@ def grid_view(df, page_number, items_per_page=PAGE_ITEMS):
 def single_card(row):
     with st.container(border=True):
         st.image(PHOTOS_FOLDER+row["FilePath"],caption="照片編號 :  "+str(row["PhotoID"]))
+        st.checkbox("選取照片", key=row["PhotoID"])
 
 def get_current_page(df):
     
@@ -41,25 +42,36 @@ def get_current_page(df):
 
         total_pages = (total_items + PAGE_ITEMS - 1) // PAGE_ITEMS  # 向上取整
         current_page= st.number_input("頁次", min_value=1, max_value=total_pages, value=1) - 1
-        st.write(f"總共 {total_items} 張照片，第 {current_page + 1} 頁，共 {total_pages} 頁")
+        st.write(f"第 {current_page + 1} 頁/共 {total_pages} 頁")
         return current_page
 
 def filter_photos(df):
-    with st.sidebar.container(border=True):
-        filter_type = st.selectbox("篩選類型", ["CaseID", "UserID", "GroupID", "Status"])
-        filter_value = st.text_input("輸入篩選值")
+    
+    with st.sidebar.expander("🎯 篩選照片", expanded=False):
 
-        if not filter_value:
-            return df
+        filter_group = st.selectbox("群組", ["All"] + list(df["GroupID"].unique()))
+        if filter_group != "All":
+            df = df[df["GroupID"] == filter_group]
 
-        filtered_df = df[df[filter_type] == filter_value]
-        return filtered_df
+        filter_user = st.selectbox("用戶", ["All"] + list(df["UserID"].unique()))
+        if filter_user != "All":
+            df = df[df["UserID"] == filter_user]
+
+        filter_case = st.selectbox("案件", ["All"] + list(df["CaseID"].unique()))
+        if filter_case != "All":
+            df = df[df["CaseID"] == filter_case]
+
+        filter_status = st.selectbox("狀態", ["All"] + list(df["Status"].unique()))
+        if filter_status != "All":
+            df = df[df["Status"] == filter_status]
+
+        return df
 
 #########################
 
 st.subheader(" 📸 照片清單")
 
-df = get_photos_df(True)
+df = get_photos_df()
 df_filtered = filter_photos(df)
 
 current_page= get_current_page(df_filtered)
