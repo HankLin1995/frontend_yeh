@@ -26,8 +26,18 @@ def get_cases(skip: int = 0, limit: int = 100):
     response.raise_for_status()
     return response.json()
 
+def get_case_by_id(case_id: str):
+    response = requests.get(f"{BASE_URL}/cases/{case_id}")
+    response.raise_for_status()
+    return response.json()
+
 def get_photos():
     response = requests.get(f"{BASE_URL}/photos/query")
+    response.raise_for_status()
+    return response.json()
+
+def get_photo_by_id(photo_id: str):
+    response = requests.get(f"{BASE_URL}/photos/{photo_id}")
     response.raise_for_status()
     return response.json()
 
@@ -35,7 +45,7 @@ def patch_photo_status_and_caseid(photo_id: str, status: str, case_id: str):
 
     photo_json_data = {
         "Status": status,
-        "CaseID": case_id,
+        "CaseID": case_id
     }
 
     # 使用 requests 進行 PATCH 請求，並將資料轉換為 JSON
@@ -44,6 +54,18 @@ def patch_photo_status_and_caseid(photo_id: str, status: str, case_id: str):
 
     return response.json()  # 返回伺服器回應的 JSON 資料
 
+def patch_photo_phase(photo_id: str,status:str, phase: str):
+
+    photo_json_data = {
+        "Status": status,
+        "Phase": phase
+    }
+
+    # 使用 requests 進行 PATCH 請求，並將資料轉換為 JSON
+    response = requests.patch(f"{BASE_URL}/photos/{photo_id}/", json=photo_json_data)
+    response.raise_for_status()  # 如果請求失敗，會觸發異常
+
+    return response.json()  # 返回伺服器回應的 JSON 資料
 
 
 # @dataclass

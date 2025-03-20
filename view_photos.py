@@ -1,6 +1,13 @@
 import streamlit as st
 import pandas as pd
-from api import get_photos,get_cases,patch_photo_status_and_caseid
+from api import (
+    get_photos,
+    get_photo_by_id,
+    get_cases,
+    get_case_by_id,
+    patch_photo_status_and_caseid,
+    patch_photo_phase
+)
 import time
 
 PHOTOS_FOLDER="D:/backend_yeh_data/photos/"
@@ -27,9 +34,11 @@ def get_photos_df(show_df=False):
     photos=get_photos()
     df= pd.DataFrame(photos)
 
-    # 處理時間顯示問題(轉換成 YYYY-MM-DD HH:MM:SS)
-    df["CreateTime"] = pd.to_datetime(df["CreateTime"])
-    df["CreateTime"] = df["CreateTime"].dt.strftime("%Y-%m-%d %H:%M:%S")
+    if not df.empty:
+
+        # 處理時間顯示問題(轉換成 YYYY-MM-DD HH:MM:SS)
+        df["CreateTime"] = pd.to_datetime(df["CreateTime"])
+        df["CreateTime"] = df["CreateTime"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
     if show_df:
         with st.expander("Dataframe"):
@@ -50,8 +59,12 @@ def grid_view(df, page_number, items_per_page=PAGE_ITEMS):
 
         cnt=cnt+1
 
+    select_all_ui(page_df)
+
 def single_card(row):
     with st.container(border=True):
+
+        ###### deal with photo #######
 
         if row["Status"]=="new":
             label="🟡"
@@ -63,23 +76,35 @@ def single_card(row):
         caption_str =label+ f"編號 : {row['PhotoID']}, 時間: {row['CreateTime']}"
 
         st.image(PHOTOS_FOLDER+row["FilePath"],caption=caption_str)
+        
+        ####### deal with phase #######
 
-        col1,col2=st.columns(2)
+        origin_phase=row["Phase"]
+
+        if not pd.isna(origin_phase):
+            new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他"],default=origin_phase,key="p_"+str(row["PhotoID"]))
+        else:
+            new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他"],key="p_"+str(row["PhotoID"]))
+
+        if origin_phase!=new_phase:
+            patch_photo_phase(row["PhotoID"],row["Status"],new_phase)
+
+        ######## deal with case ########
+
+        col1,col2=st.columns([1,2])
 
         with col2:
-
-            if row["CaseID"] > 0:
+            
+            if pd.notna(row["CaseID"]): 
                 caseid=row["CaseID"]
                 df_cases=get_cases_df()
                 case_name=df_cases[df_cases["CaseID"]==caseid]["Name"]
-                
                 st.success(f"{case_name.values[0]}")
 
             if row["Status"]=="new":
                 st.warning("新建照片")
             elif row["Status"]=="rejected":
                 st.error("垃圾桶")
-
 
         with col1:
 
@@ -88,7 +113,7 @@ def single_card(row):
             else:
                 selected_value=False
 
-            if st.checkbox("選取",value=selected_value, key=row["PhotoID"]):
+            if st.checkbox("**選取照片**",value=selected_value, key=row["PhotoID"]):
                 if row["PhotoID"] not in st.session_state.selected_photos:
                     st.session_state.selected_photos.append(row["PhotoID"])
             else:
@@ -158,13 +183,63 @@ def mark_photos():
     if st.button("確認更改", type="primary"):   
         for photo_id in st.session_state.selected_photos:
 
-            patch_photo_status_and_caseid(photo_id, status, case_id)
+            origin_photo=get_photo_by_id(photo_id)
+            origin_case_id=origin_photo["CaseID"]
 
-            # if status=="approved": patch_photo_case(photo_id, case_id)
+            patch_photo_status_and_caseid(photo_id, status, case_id)
+            move_case_photo(origin_photo,case_id,origin_case_id)
 
         st.cache_data.clear()
         st.session_state.selected_photos=[]
+
         st.rerun()
+
+def move_case_photo(photo, case_id, origin_case_id):
+
+    PHOTOS_FOLDER = "D:/backend_yeh_data/photos/"
+    PHOTOS_FOLDER_APPROVED = "D:/backend_yeh_data/photos_approved/"
+
+    import os
+    import shutil
+
+    if not origin_case_id==None:
+        origin_case_name=get_case_by_id(origin_case_id)["Name"]
+
+        # 在旧的案件资料夹中删除照片，先检查是否存在再删除
+        if origin_case_name:
+            origin_case_folder = os.path.join(PHOTOS_FOLDER_APPROVED, origin_case_name)
+            origin_photo_path = os.path.join(origin_case_folder, photo["FilePath"])
+            if os.path.exists(origin_photo_path):
+                os.remove(origin_photo_path)
+
+    if not case_id==None:
+        case_name=get_case_by_id(case_id)["Name"]
+        # 在新的案件资料夹中复制照片过去
+        if case_name:
+            case_folder = os.path.join(PHOTOS_FOLDER_APPROVED, case_name)
+            if not os.path.exists(case_folder):
+                os.makedirs(case_folder)  # 创建新的案件文件夹
+            new_photo_path = os.path.join(case_folder, photo["FilePath"])
+            
+            # 检查照片文件是否存在，如果不存在则复制
+            origin_photo_full_path = os.path.join(PHOTOS_FOLDER, photo["FilePath"])
+            if not os.path.exists(new_photo_path):
+                shutil.copyfile(origin_photo_full_path, new_photo_path)
+
+def select_all_ui(page_df):
+    col1,col2=st.columns(2)
+
+    with col1:
+        # 全選/取消全選目前顯示頁面
+        if st.button("選取全部",use_container_width=True):
+            st.session_state.selected_photos = list(page_df["PhotoID"])
+            st.rerun()
+
+    with col2:
+        # 取消全選
+        if st.button("取消全選",use_container_width=True):
+            st.session_state.selected_photos = []
+            st.rerun()
 
 #########################
 
