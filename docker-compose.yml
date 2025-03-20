@@ -1,0 +1,24 @@
+services:
+  streamlit_app:
+    build: .  # Build the image using the Dockerfile in the current directory
+    ports:
+       - "8501:8501"  # Map port 5000 on the host to port 5000 in the container
+    volumes:
+      - ${PHOTOS_PATH}:/app/app/uploads
+      - ${APPROVED_PATH}:/app/app/approved
+      - ${REJECTED_PATH}:/app/app/rejected
+    env_file:
+      - .env
+    networks:
+      - st_erp_network
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TUNNEL_TOKEN}
+    networks:
+      - st_erp_network
+
+networks:
+  st_erp_network:
+    name: st_erp_network
+    driver: bridge

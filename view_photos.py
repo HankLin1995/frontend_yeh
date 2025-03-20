@@ -10,7 +10,7 @@ from api import (
 )
 import time
 
-PHOTOS_FOLDER="D:/backend_yeh_data/photos/"
+PHOTOS_FOLDER="/app/app/uploads/" #D:/backend_yeh_data/photos/"
 
 PAGE_ITEMS = 12
 COLUMNS=3
@@ -50,7 +50,7 @@ def grid_view(df, page_number, items_per_page=PAGE_ITEMS):
     end_idx = start_idx + items_per_page
     page_df = df.iloc[start_idx:end_idx]
     
-    cols = st.columns(COLUMNS)
+    cols = st.columns(COLUMNS,vertical_alignment="top")
 
     cnt=0
     for index, row in page_df.iterrows():
@@ -66,6 +66,8 @@ def single_card(row):
 
         ###### deal with photo #######
 
+        label=""
+
         if row["Status"]=="new":
             label="🟡"
         elif row["Status"]=="approved":
@@ -75,14 +77,17 @@ def single_card(row):
 
         caption_str =label+ f"編號 : {row['PhotoID']}, 時間: {row['CreateTime']}"
 
-        st.image(PHOTOS_FOLDER+row["FilePath"],caption=caption_str)
-        
+        try:
+            st.image(PHOTOS_FOLDER+row["FilePath"],caption=caption_str)
+        except Exception as e:
+            st.error(f"照片讀取錯誤: {e}")
+
         ####### deal with phase #######
 
         origin_phase=row["Phase"]
 
         if not pd.isna(origin_phase):
-            new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他"],default=origin_phase,key="p_"+str(row["PhotoID"]))
+            new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他","未設定"],default=origin_phase,key="p_"+str(row["PhotoID"]))
         else:
             new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他"],key="p_"+str(row["PhotoID"]))
 
