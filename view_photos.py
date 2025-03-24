@@ -46,18 +46,28 @@ def get_photos_df(show_df=False):
     return df
 
 def grid_view(df, page_number, items_per_page=PAGE_ITEMS):
+
     start_idx = page_number * items_per_page
     end_idx = start_idx + items_per_page
     page_df = df.iloc[start_idx:end_idx]
     
-    cols = st.columns(COLUMNS,vertical_alignment="top")
+    # cols = st.columns(COLUMNS,vertical_alignment="top")
 
-    cnt=0
-    for index, row in page_df.iterrows():
-        with cols[cnt % COLUMNS]:
-            single_card(row)
+    # cnt=0
+    # for index, row in page_df.iterrows():
+    #     with cols[cnt % COLUMNS]:
+    #         single_card(row)
 
-        cnt=cnt+1
+    #     cnt=cnt+1
+
+    for i in range(0, len(page_df), COLUMNS):
+
+        cols = st.columns(COLUMNS, vertical_alignment="center")
+        cnt=0
+        for index, row in page_df[i:i + COLUMNS].iterrows():
+            with cols[cnt]:
+                single_card(row)
+            cnt=cnt+1
 
     select_all_ui(page_df)
 
@@ -87,7 +97,10 @@ def single_card(row):
         origin_phase=row["Phase"]
 
         if not pd.isna(origin_phase):
-            new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他","未設定"],default=origin_phase,key="p_"+str(row["PhotoID"]))
+            try:
+                new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他","未設定"],default=origin_phase,key="p_"+str(row["PhotoID"]))
+            except:
+                new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他","未設定"],key="p_"+str(row["PhotoID"]))
         else:
             new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他"],key="p_"+str(row["PhotoID"]))
 
@@ -236,13 +249,13 @@ def select_all_ui(page_df):
 
     with col1:
         # 全選/取消全選目前顯示頁面
-        if st.button("選取全部",use_container_width=True):
+        if st.button("✅ 選取本頁全部",use_container_width=True):
             st.session_state.selected_photos = list(page_df["PhotoID"])
             st.rerun()
 
     with col2:
         # 取消全選
-        if st.button("取消全選",use_container_width=True):
+        if st.button("❌ 取消本頁全部",use_container_width=True):
             st.session_state.selected_photos = []
             st.rerun()
 
