@@ -6,10 +6,30 @@ load_dotenv()
 
 BASE_URL = os.getenv("BASE_URL")
 
+def create_user(user_id: str, user_name: str, user_pic: str, nick_name: str):
+    user_data = {
+        "UserID": user_id,
+        "UserName": user_name,
+        "UserPic": user_pic,
+        "NickName": nick_name
+    }
+    response = requests.post(f"{BASE_URL}/users", json=user_data)
+    response.raise_for_status()
+    return response.json()
+
 def get_users(skip: int = 0, limit: int = 100):
     response = requests.get(f"{BASE_URL}/users")
     response.raise_for_status()
     return response.json()
+
+def get_user(user_id: str):
+    response = requests.get(f"{BASE_URL}/users/{user_id}")
+    # return status code and json data
+    if response.status_code == 404:
+        return None
+    else:
+        response.raise_for_status()
+        return response.json()
 
 def update_user_role(user_id: str, role: str):
     response = requests.patch(f"{BASE_URL}/users/{user_id}/role", json={"Role": role})
@@ -66,46 +86,3 @@ def patch_photo_phase(photo_id: str,status:str, phase: str):
     response.raise_for_status()  # 如果請求失敗，會觸發異常
 
     return response.json()  # 返回伺服器回應的 JSON 資料
-
-
-# @dataclass
-# class User:
-#     UserID: str
-#     UserName: str
-#     UserPic: str
-#     NickName: str
-
-# class UserAPI:
-#     def __init__(self, base_url: str = BASE_URL):
-#         self.base_url = base_url
-#         self.endpoint = f"{base_url}/users"
-
-#     def get_users(self, skip: int = 0, limit: int = 100) -> List[User]:
-#         """Get list of users"""
-#         response = requests.get(
-#             self.endpoint,
-#             params={"skip": skip, "limit": limit}
-#         )
-#         response.raise_for_status()
-#         return [User(**user) for user in response.json()]
-
-#     def get_user(self, user_id: str) -> User:
-#         """Get specific user"""
-#         response = requests.get(f"{self.endpoint}/{user_id}")
-#         response.raise_for_status()
-#         return User(**response.json())
-
-#     def create_user(self, user_data: Dict) -> User:
-#         """Create new user"""
-#         response = requests.post(self.endpoint, json=user_data)
-#         response.raise_for_status()
-#         return User(**response.json())
-
-#     def update_user_role(self, user_id: str, role: str) -> User:
-#         """Update user role"""
-#         response = requests.patch(
-#             f"{self.endpoint}/{user_id}/role",
-#             json={"Role": role}
-#         )
-#         response.raise_for_status()
-#         return User(**response.json())
