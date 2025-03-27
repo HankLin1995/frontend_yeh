@@ -46,8 +46,30 @@ def get_cases(skip: int = 0, limit: int = 100):
     response.raise_for_status()
     return response.json()
 
+def create_case(case_name: str, group_id: str, location: str, content: str):
+    case_data = {
+        "Name": case_name,
+        "GroupID": group_id,
+        "Location": location,
+        "Content": content
+    }
+    response = requests.post(f"{BASE_URL}/cases", json=case_data)
+    response.raise_for_status()
+    return response.json()
+
 def get_case_by_id(case_id: str):
     response = requests.get(f"{BASE_URL}/cases/{case_id}")
+    response.raise_for_status()
+    return response.json()
+
+def update_case(case_id: str, case_name: str, location: str, content: str, status: str):
+    case_data = {
+        "Name": case_name,
+        "Location": location,
+        "Content": content,
+        "Status": status
+    }
+    response = requests.patch(f"{BASE_URL}/cases/{case_id}", json=case_data)
     response.raise_for_status()
     return response.json()
 

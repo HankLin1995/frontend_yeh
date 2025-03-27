@@ -13,7 +13,7 @@ st.logo("./static/BANNER-removebg-preview.png")
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "user_role" not in st.session_state:
-    st.session_state.user_role = None
+    st.session_state.user_role = ""
 
 # LINE LOGIN
 

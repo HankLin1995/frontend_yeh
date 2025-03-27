@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from api import get_cases, get_groups
+from api import get_cases, get_groups, create_case, update_case,get_case_by_id
 
 st.subheader(" 🚧 案件清單")
 
@@ -37,6 +37,34 @@ def show_case(df):
     df=df.drop(columns=["群組編號"])
     st.dataframe(df,hide_index=True)
 
+@st.dialog("新增案件")
+def create_case_ui():
+    group_name=st.selectbox("群組", options=get_groups_df()["群組名稱"])
+    group_id=get_groups_df()[get_groups_df()["群組名稱"]==group_name]["群組編號"].values[0]
+    case_name=st.text_input("案件名稱")
+    case_content=st.text_area("案件內容")
+    case_location=st.text_input("案件地點")
+
+    if st.button("新增案件", key="create_case"):
+        create_case(case_name, group_id, case_location, case_content)
+        st.cache_data.clear()
+        st.rerun()
+
+@st.dialog("更新案件")
+def edit_case_ui():
+    case_name=st.selectbox("案件", options=get_cases_df()["案件名稱"])
+    case_id=get_cases_df()[get_cases_df()["案件名稱"]==case_name]["案件ID"].values[0]
+    case=get_case_by_id(case_id)
+    case_name=st.text_input("案件名稱", value=case["Name"])
+    case_content=st.text_area("案件內容", value=case["Content"])
+    case_location=st.text_input("案件地點", value=case["Location"])
+    case_status=st.selectbox("案件狀態", options=["new", "completed"])
+
+    if st.button("更新案件", key="edit_case"):
+        update_case(case_id, case_name, case_location, case_content, case_status)
+        st.cache_data.clear()
+        st.rerun()
+
 ############################################
 
 # def select_mode():
@@ -53,3 +81,11 @@ show_case_bygroup(df)
     # show_case_bygroup(df)
 # elif mode=="全部":
     # show_case(df)
+
+# add case
+
+if st.sidebar.button("新增案件"):
+    create_case_ui()
+
+if st.sidebar.button("更新案件"):
+    edit_case_ui()

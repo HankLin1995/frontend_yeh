@@ -96,6 +96,8 @@ def single_card(row):
 
         origin_phase=row["Phase"]
 
+        # st.write(origin_phase)
+
         if not pd.isna(origin_phase):
             try:
                 new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他","未設定"],default=origin_phase,key="p_"+str(row["PhotoID"]))
