@@ -297,8 +297,8 @@ def mark_photos():
 
 def move_case_photo(photo, case_id, origin_case_id):
 
-    PHOTOS_FOLDER = "D:/backend_yeh_data/photos/"
-    PHOTOS_FOLDER_APPROVED = "D:/backend_yeh_data/photos_approved/"
+    PHOTOS_FOLDER = "/app/app/uploads/"
+    PHOTOS_FOLDER_APPROVED = "/app/app/approved/"
 
     import os
     import shutil

@@ -9,7 +9,7 @@ VERSION_NUMBER = "V2.0"
 st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon=":derelict_house_building:", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")
 
-test_mode=True
+test_mode=False
 
 if test_mode==True:
 
