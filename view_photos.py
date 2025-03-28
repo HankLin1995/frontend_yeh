@@ -17,8 +17,8 @@ PHOTOS_FOLDER="/app/app/uploads/" #D:/backend_yeh_data/photos/"
 
 STATUS_MAP = {
     "新建": "new",
-    "已通過": "approved",
-    "已拒絕": "rejected"
+    "歸檔": "approved",
+    "垃圾桶": "rejected"
 }
 
 PAGE_ITEMS = 12
@@ -129,6 +129,9 @@ def single_card(row):
 
         if origin_phase!=new_phase:
             patch_photo_phase(row["PhotoID"],row["Status"],new_phase)
+
+            if row["PhotoID"] not in st.session_state.selected_photos:
+                st.session_state.selected_photos.append(row["PhotoID"])
 
         ######## deal with case ########
 
@@ -275,11 +278,11 @@ def mark_photos():
     selected_photos_list=[photo_id for photo_id in st.session_state.selected_photos]
     selected_photos_string = ','.join(map(str, selected_photos_list))
     st.info(selected_photos_string)
-    status=st.selectbox("照片狀態",["new","approved","rejected"])
+    status=st.selectbox("照片狀態",STATUS_MAP.keys())
     # case_id=get_case_id()
     case_id=None
 
-    if status=="approved":
+    if status=="歸檔":
         case_id=get_case_id()
 
     if st.button("確認更改", type="primary"):   
