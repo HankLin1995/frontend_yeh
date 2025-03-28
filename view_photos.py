@@ -6,11 +6,19 @@ from api import (
     get_cases,
     get_case_by_id,
     patch_photo_status_and_caseid,
-    patch_photo_phase
+    patch_photo_phase,
+    get_groups,
+    get_users,
 )
 import time
 
 PHOTOS_FOLDER="/app/app/uploads/" #D:/backend_yeh_data/photos/"
+
+STATUS_MAP = {
+    "新建": "new",
+    "已通過": "approved",
+    "已拒絕": "rejected"
+}
 
 PAGE_ITEMS = 12
 COLUMNS=3
@@ -27,6 +35,18 @@ def get_cases_df():
     cases=get_cases()
     df= pd.DataFrame(cases)[["CaseID","GroupID", "Name", "Content","Location","CreateTime","Status"]]
     df.columns = ["CaseID","GroupID" ,"Name", "Content", "Location", "CreateTime", "Status"]
+    return df
+
+@st.cache_data
+def get_groups_df():
+    groups=get_groups()
+    df= pd.DataFrame(groups)[["GroupID", "Name"]]
+    return df
+
+@st.cache_data
+def get_users_df():
+    users=get_users()
+    df= pd.DataFrame(users)[["UserID", "UserName"]]
     return df
 
 @st.cache_data
@@ -119,7 +139,11 @@ def single_card(row):
                 caseid=row["CaseID"]
                 df_cases=get_cases_df()
                 case_name=df_cases[df_cases["CaseID"]==caseid]["Name"]
-                st.success(f"{case_name.values[0]}")
+                try:
+                    st.success(f"{case_name.values[0]}")
+                except:
+                    pass
+                    # st.error("案件不存在")
 
             if row["Status"]=="new":
                 st.warning("新建照片")
@@ -154,28 +178,85 @@ def get_current_page(df):
         st.write(f"第 {current_page + 1} 頁/共 {total_pages} 頁")
         return current_page
 
-def filter_photos(df):
+def get_filter_group(df):
     
+    df_groups=get_groups_df()
+    group_names = ["全部"] + list(df_groups["Name"])
+    filter_group = st.selectbox("💠群組", group_names)
+
+    if filter_group == "全部":
+        return None
+    else:
+        filter_group_id = df_groups[df_groups["Name"] == filter_group]["GroupID"].values[0]
+        return filter_group_id
+
+def get_filter_user(df):
+    df_users=get_users_df()
+    user_names = ["全部"] + list(df_users["UserName"])
+    filter_user = st.selectbox("💠用戶", user_names)
+    if filter_user == "全部":
+        return None
+    else:
+        filter_user_id = df_users[df_users["UserName"] == filter_user]["UserID"].values[0]
+        return filter_user_id
+
+def get_filter_case(df):
+    df_cases=get_cases_df()
+    case_names = ["全部"] + list(df_cases["Name"])
+    filter_case = st.selectbox("💠案件", case_names)
+    if filter_case == "全部":
+        return None
+    else:
+        filter_case_id = df_cases[df_cases["Name"] == filter_case]["CaseID"].values[0]
+        return filter_case_id
+
+def get_filter_status():
+
+    filter_status = st.selectbox("💠狀態", ["全部"] + list(STATUS_MAP.keys()))
+    if filter_status == "全部":
+        return None
+    filter_status_value = STATUS_MAP[filter_status]
+    return filter_status_value
+
+
+def filter_photos(df):
+
     with st.sidebar.expander("🎯 篩選照片", expanded=False):
 
-        filter_group = st.selectbox("💠群組", ["All"] + list(df["GroupID"].unique()))
-        if filter_group != "All":
+        filter_group = get_filter_group(df)
+        filter_user = get_filter_user(df)
+        filter_case = get_filter_case(df)
+        filter_status = get_filter_status()
+
+        if filter_group:
             df = df[df["GroupID"] == filter_group]
 
-        filter_user = st.selectbox("💠用戶", ["All"] + list(df["UserID"].unique()))
-        if filter_user != "All":
+        if filter_user:
             df = df[df["UserID"] == filter_user]
 
-        filter_case = st.selectbox("💠案件", ["All"] + list(df["CaseID"].unique()))
-        if filter_case != "All":
+        if filter_case:
             df = df[df["CaseID"] == filter_case]
 
-        filter_status = st.pills("💠狀態", ["All"] + list(df["Status"].unique()),default="All")
-        if filter_status != "All":
+        if filter_status:
             df = df[df["Status"] == filter_status]
             st.session_state.selected_photos=[]
 
         return df
+
+        # filter_user = st.selectbox("💠用戶", ["All"] + list(df["UserID"].unique()))
+        # if filter_user != "All":
+        #     df = df[df["UserID"] == filter_user]
+
+        # filter_case = st.selectbox("💠案件", ["All"] + list(df["CaseID"].unique()))
+        # if filter_case != "All":
+        #     df = df[df["CaseID"] == filter_case]
+
+        # filter_status = st.pills("💠狀態", ["All"] + list(df["Status"].unique()),default="All")
+        # if filter_status != "All":
+        #     df = df[df["Status"] == filter_status]
+        #     st.session_state.selected_photos=[]
+
+        # return df
 
 def get_case_id():
     df_case=get_cases_df()
@@ -282,3 +363,8 @@ if st.sidebar.button("📝 修正照片狀態"):
         st.sidebar.warning("請選擇照片!")
     else:
         mark_photos()
+
+if st.sidebar.button("🔃重新整理"):
+    st.cache_data.clear()
+    st.rerun()
+    

@@ -84,8 +84,8 @@ show_case_bygroup(df)
 
 # add case
 
-if st.sidebar.button("新增案件"):
+if st.sidebar.button("🆕新增案件"):
     create_case_ui()
 
-if st.sidebar.button("更新案件"):
+if st.sidebar.button("📝更新案件"):
     edit_case_ui()
