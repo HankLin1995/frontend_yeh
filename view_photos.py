@@ -300,6 +300,17 @@ def move_case_photo(photo, case_id, origin_case_id):
     PHOTOS_FOLDER = "/app/app/uploads/"
     PHOTOS_FOLDER_APPROVED = "/app/app/approved/"
 
+    #photo_path=ID_日期_使用者暱稱_階段.格式
+    photo_id=photo["PhotoID"]
+    photo_path=photo["FilePath"]
+    photo_user_id=photo["UserID"]
+    photo_user_name=get_user(photo_user_id)["NickName"]
+    photo_phase=photo["Phase"]
+    photo_date=photo_path.split("_")[0]
+    photo_extension=photo_path.split(".")[1]
+
+    photo_filename=f"{photo_id}_{photo_date}_{photo_user_name}_{photo_phase}.{photo_extension}"
+
     import os
     import shutil
 
@@ -309,7 +320,7 @@ def move_case_photo(photo, case_id, origin_case_id):
         # 在旧的案件资料夹中删除照片，先检查是否存在再删除
         if origin_case_name:
             origin_case_folder = os.path.join(PHOTOS_FOLDER_APPROVED, origin_case_name)
-            origin_photo_path = os.path.join(origin_case_folder, photo["FilePath"])
+            origin_photo_path = os.path.join(origin_case_folder, photo_filename)
             if os.path.exists(origin_photo_path):
                 os.remove(origin_photo_path)
 
@@ -320,10 +331,10 @@ def move_case_photo(photo, case_id, origin_case_id):
             case_folder = os.path.join(PHOTOS_FOLDER_APPROVED, case_name)
             if not os.path.exists(case_folder):
                 os.makedirs(case_folder)  # 创建新的案件文件夹
-            new_photo_path = os.path.join(case_folder, photo["FilePath"])
+            new_photo_path = os.path.join(case_folder, photo_filename)
             
             # 检查照片文件是否存在，如果不存在则复制
-            origin_photo_full_path = os.path.join(PHOTOS_FOLDER, photo["FilePath"])
+            origin_photo_full_path = os.path.join(PHOTOS_FOLDER, photo_path)
             if not os.path.exists(new_photo_path):
                 shutil.copyfile(origin_photo_full_path, new_photo_path)
 
