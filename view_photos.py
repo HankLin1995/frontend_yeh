@@ -12,6 +12,15 @@ import time
 
 PHOTOS_FOLDER="/app/app/uploads/" #D:/backend_yeh_data/photos/"
 
+#case status 中文映射
+CASE_STATUS={
+    "new":"新建照片",
+    "approved":"指定案件照片",
+    "rejected":"不合格照片"
+}
+
+PHASE_LIST=["材料","施工前","施工中","施工後","會議","其他"]
+
 PAGE_ITEMS = 12
 COLUMNS=3
 
@@ -100,11 +109,11 @@ def single_card(row):
 
         if not pd.isna(origin_phase):
             try:
-                new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他","未設定"],default=origin_phase,key="p_"+str(row["PhotoID"]))
+                new_phase=st.pills("🏷️ 標籤",PHASE_LIST,default=origin_phase,key="p_"+str(row["PhotoID"]))
             except:
-                new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他","未設定"],key="p_"+str(row["PhotoID"]))
+                new_phase=st.pills("🏷️ 標籤",PHASE_LIST,key="p_"+str(row["PhotoID"]))
         else:
-            new_phase=st.pills("🏷️ 標籤",["材料","施工前","施工中","施工後","會議","其他"],key="p_"+str(row["PhotoID"]))
+            new_phase=st.pills("🏷️ 標籤",PHASE_LIST,key="p_"+str(row["PhotoID"]))
 
         if origin_phase!=new_phase:
             patch_photo_phase(row["PhotoID"],row["Status"],new_phase)
