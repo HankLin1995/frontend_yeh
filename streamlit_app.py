@@ -9,11 +9,21 @@ VERSION_NUMBER = "V2.0"
 st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon=":derelict_house_building:", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")
 
-# Check if the user is logged in
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-if "user_role" not in st.session_state:
-    st.session_state.user_role = ""
+test_mode=False
+
+if test_mode==True:
+
+    # Check if the user is logged in
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = True
+    if "user_role" not in st.session_state:
+        st.session_state.user_role = "admin"
+else:
+    # Check if the user is logged in
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+    if "user_role" not in st.session_state:
+        st.session_state.user_role = ""
 
 # LINE LOGIN
 

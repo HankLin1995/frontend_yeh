@@ -6,21 +6,21 @@ from api import (
     get_cases,
     get_case_by_id,
     patch_photo_status_and_caseid,
-    patch_photo_phase
+    patch_photo_phase,
+    get_groups,
+    get_users,
+    get_user
 )
 import time
 
 PHOTOS_FOLDER="/app/app/uploads/" #D:/backend_yeh_data/photos/"
 
-#case status 中文映射
-CASE_STATUS={
-    "new":"新建照片",
-    "approved":"指定案件照片",
-    "rejected":"不合格照片"
-}
-
 PHASE_LIST=["材料","施工前","施工中","施工後","會議","其他"]
-
+STATUS_MAP = {
+    "新建": "new",
+    "歸檔": "approved",
+    "垃圾桶": "rejected"
+}
 PAGE_ITEMS = 12
 COLUMNS=3
 
@@ -36,6 +36,18 @@ def get_cases_df():
     cases=get_cases()
     df= pd.DataFrame(cases)[["CaseID","GroupID", "Name", "Content","Location","CreateTime","Status"]]
     df.columns = ["CaseID","GroupID" ,"Name", "Content", "Location", "CreateTime", "Status"]
+    return df
+
+@st.cache_data
+def get_groups_df():
+    groups=get_groups()
+    df= pd.DataFrame(groups)[["GroupID", "Name"]]
+    return df
+
+@st.cache_data
+def get_users_df():
+    users=get_users()
+    df= pd.DataFrame(users)[["UserID", "UserName"]]
     return df
 
 @st.cache_data
@@ -118,6 +130,9 @@ def single_card(row):
         if origin_phase!=new_phase:
             patch_photo_phase(row["PhotoID"],row["Status"],new_phase)
 
+            if row["PhotoID"] not in st.session_state.selected_photos:
+                st.session_state.selected_photos.append(row["PhotoID"])
+
         ######## deal with case ########
 
         col1,col2=st.columns([1,2])
@@ -128,7 +143,11 @@ def single_card(row):
                 caseid=row["CaseID"]
                 df_cases=get_cases_df()
                 case_name=df_cases[df_cases["CaseID"]==caseid]["Name"]
-                st.success(f"{case_name.values[0]}")
+                try:
+                    st.success(f"{case_name.values[0]}")
+                except:
+                    pass
+                    # st.error("案件不存在")
 
             if row["Status"]=="new":
                 st.warning("新建照片")
@@ -163,28 +182,85 @@ def get_current_page(df):
         st.write(f"第 {current_page + 1} 頁/共 {total_pages} 頁")
         return current_page
 
-def filter_photos(df):
+def get_filter_group(df):
     
+    df_groups=get_groups_df()
+    group_names = ["全部"] + list(df_groups["Name"])
+    filter_group = st.selectbox("💠群組", group_names)
+
+    if filter_group == "全部":
+        return None
+    else:
+        filter_group_id = df_groups[df_groups["Name"] == filter_group]["GroupID"].values[0]
+        return filter_group_id
+
+def get_filter_user(df):
+    df_users=get_users_df()
+    user_names = ["全部"] + list(df_users["UserName"])
+    filter_user = st.selectbox("💠用戶", user_names)
+    if filter_user == "全部":
+        return None
+    else:
+        filter_user_id = df_users[df_users["UserName"] == filter_user]["UserID"].values[0]
+        return filter_user_id
+
+def get_filter_case(df):
+    df_cases=get_cases_df()
+    case_names = ["全部"] + list(df_cases["Name"])
+    filter_case = st.selectbox("💠案件", case_names)
+    if filter_case == "全部":
+        return None
+    else:
+        filter_case_id = df_cases[df_cases["Name"] == filter_case]["CaseID"].values[0]
+        return filter_case_id
+
+def get_filter_status():
+
+    filter_status = st.selectbox("💠狀態", ["全部"] + list(STATUS_MAP.keys()))
+    if filter_status == "全部":
+        return None
+    filter_status_value = STATUS_MAP[filter_status]
+    return filter_status_value
+
+
+def filter_photos(df):
+
     with st.sidebar.expander("🎯 篩選照片", expanded=False):
 
-        filter_group = st.selectbox("💠群組", ["All"] + list(df["GroupID"].unique()))
-        if filter_group != "All":
+        filter_group = get_filter_group(df)
+        filter_user = get_filter_user(df)
+        filter_case = get_filter_case(df)
+        filter_status = get_filter_status()
+
+        if filter_group:
             df = df[df["GroupID"] == filter_group]
 
-        filter_user = st.selectbox("💠用戶", ["All"] + list(df["UserID"].unique()))
-        if filter_user != "All":
+        if filter_user:
             df = df[df["UserID"] == filter_user]
 
-        filter_case = st.selectbox("💠案件", ["All"] + list(df["CaseID"].unique()))
-        if filter_case != "All":
+        if filter_case:
             df = df[df["CaseID"] == filter_case]
 
-        filter_status = st.pills("💠狀態", ["All"] + list(df["Status"].unique()),default="All")
-        if filter_status != "All":
+        if filter_status:
             df = df[df["Status"] == filter_status]
             st.session_state.selected_photos=[]
 
         return df
+
+        # filter_user = st.selectbox("💠用戶", ["All"] + list(df["UserID"].unique()))
+        # if filter_user != "All":
+        #     df = df[df["UserID"] == filter_user]
+
+        # filter_case = st.selectbox("💠案件", ["All"] + list(df["CaseID"].unique()))
+        # if filter_case != "All":
+        #     df = df[df["CaseID"] == filter_case]
+
+        # filter_status = st.pills("💠狀態", ["All"] + list(df["Status"].unique()),default="All")
+        # if filter_status != "All":
+        #     df = df[df["Status"] == filter_status]
+        #     st.session_state.selected_photos=[]
+
+        # return df
 
 def get_case_id():
     df_case=get_cases_df()
@@ -202,11 +278,11 @@ def mark_photos():
     selected_photos_list=[photo_id for photo_id in st.session_state.selected_photos]
     selected_photos_string = ','.join(map(str, selected_photos_list))
     st.info(selected_photos_string)
-    status=st.selectbox("照片狀態",["new","approved","rejected"])
+    status=st.selectbox("照片狀態",STATUS_MAP.keys())
     # case_id=get_case_id()
     case_id=None
 
-    if status=="approved":
+    if status=="歸檔":
         case_id=get_case_id()
 
     if st.button("確認更改", type="primary"):   
@@ -225,8 +301,19 @@ def mark_photos():
 
 def move_case_photo(photo, case_id, origin_case_id):
 
-    PHOTOS_FOLDER = "D:/backend_yeh_data/photos/"
-    PHOTOS_FOLDER_APPROVED = "D:/backend_yeh_data/photos_approved/"
+    PHOTOS_FOLDER = "/app/app/uploads/"
+    PHOTOS_FOLDER_APPROVED = "/app/app/approved/"
+
+    #photo_path=ID_日期_使用者暱稱_階段.格式
+    photo_id=photo["PhotoID"]
+    photo_path=photo["FilePath"]
+    photo_user_id=photo["UserID"]
+    photo_user_name=get_user(photo_user_id)["NickName"]
+    photo_phase=photo["Phase"]
+    photo_date=photo_path.split("_")[0]
+    photo_extension=photo_path.split(".")[1]
+
+    photo_filename=f"{photo_id}_{photo_date}_{photo_user_name}_{photo_phase}.{photo_extension}"
 
     import os
     import shutil
@@ -237,7 +324,7 @@ def move_case_photo(photo, case_id, origin_case_id):
         # 在旧的案件资料夹中删除照片，先检查是否存在再删除
         if origin_case_name:
             origin_case_folder = os.path.join(PHOTOS_FOLDER_APPROVED, origin_case_name)
-            origin_photo_path = os.path.join(origin_case_folder, photo["FilePath"])
+            origin_photo_path = os.path.join(origin_case_folder, photo_filename)
             if os.path.exists(origin_photo_path):
                 os.remove(origin_photo_path)
 
@@ -248,10 +335,10 @@ def move_case_photo(photo, case_id, origin_case_id):
             case_folder = os.path.join(PHOTOS_FOLDER_APPROVED, case_name)
             if not os.path.exists(case_folder):
                 os.makedirs(case_folder)  # 创建新的案件文件夹
-            new_photo_path = os.path.join(case_folder, photo["FilePath"])
+            new_photo_path = os.path.join(case_folder, photo_filename)
             
             # 检查照片文件是否存在，如果不存在则复制
-            origin_photo_full_path = os.path.join(PHOTOS_FOLDER, photo["FilePath"])
+            origin_photo_full_path = os.path.join(PHOTOS_FOLDER, photo_path)
             if not os.path.exists(new_photo_path):
                 shutil.copyfile(origin_photo_full_path, new_photo_path)
 
@@ -291,3 +378,8 @@ if st.sidebar.button("📝 修正照片狀態"):
         st.sidebar.warning("請選擇照片!")
     else:
         mark_photos()
+
+if st.sidebar.button("🔃重新整理"):
+    st.cache_data.clear()
+    st.rerun()
+    
