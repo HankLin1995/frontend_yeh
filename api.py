@@ -108,3 +108,88 @@ def patch_photo_phase(photo_id: str,status:str, phase: str):
     response.raise_for_status()  # 如果請求失敗，會觸發異常
 
     return response.json()  # 返回伺服器回應的 JSON 資料
+
+
+#### 員工、薪資、證照
+
+def get_users():
+    base_url = os.getenv("BASE_URL")
+    resp = requests.get(f"{base_url}/users")
+    resp.raise_for_status()
+    return resp.json()
+
+def get_employees():
+    base_url = os.getenv("BASE_URL")
+    resp = requests.get(f"{base_url}/employees")
+    resp.raise_for_status()
+    return resp.json()
+
+def create_employee(data):
+    base_url = os.getenv("BASE_URL")
+    resp = requests.post(f"{base_url}/employees", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def update_employee(employee_id, data):
+    base_url = os.getenv("BASE_URL")
+    resp = requests.patch(f"{base_url}/employees/{employee_id}", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def delete_employee(employee_id):
+    base_url = os.getenv("BASE_URL")
+    resp = requests.delete(f"{base_url}/employees/{employee_id}")
+    resp.raise_for_status()
+    return resp.json()
+
+def get_employee_detail(line_id):
+    base_url = os.getenv("BASE_URL")
+    resp = requests.get(f"{base_url}/employees/{line_id}")
+    # resp.raise_for_status()
+    return resp.json()
+
+# 證照
+
+def get_certificates(employee_id):
+    base_url = os.getenv("BASE_URL")
+    resp = requests.get(f"{base_url}/employees/{employee_id}/certificates")
+    resp.raise_for_status()
+    return resp.json()
+
+def create_certificate(data):
+    base_url = os.getenv("BASE_URL")
+    resp = requests.post(f"{base_url}/employees/certificates/", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def update_certificate(certificate_id, data):
+    base_url = os.getenv("BASE_URL")
+    resp = requests.patch(f"{base_url}/employees/certificates/{certificate_id}", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def delete_certificate(certificate_id):
+    base_url = os.getenv("BASE_URL")
+    resp = requests.delete(f"{base_url}/employees/certificates/{certificate_id}")
+    resp.raise_for_status()
+    return resp.json()
+
+# 薪資
+
+def get_salaries(employee_id):
+    base_url = os.getenv("BASE_URL")
+    resp = requests.get(f"{base_url}/employees/{employee_id}/salaries")
+    resp.raise_for_status()
+    return resp.json()
+
+def create_salary(data):
+    base_url = os.getenv("BASE_URL")
+    resp = requests.post(f"{base_url}/employees/salaries/", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def update_salary(salary_id, data):
+    base_url = os.getenv("BASE_URL")
+    resp = requests.patch(f"{base_url}/employees/salaries/{salary_id}", json=data)
+    resp.raise_for_status()
+    return resp.json()
