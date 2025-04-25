@@ -64,7 +64,7 @@ def display_employee(employee):
         """)
 
 @st.dialog("✏️ 新增員工資料")
-def create_employee_ui():
+def create_employee_ui(line_id):
 
     form = st.form("create_employee_form")
 
@@ -86,6 +86,7 @@ def create_employee_ui():
     if submitted:
         data = {
             "name": name,
+            "line_id": line_id,
             "gender": gender,
             "birth_date": str(birth_date),
             "id_number": id_number,
@@ -100,11 +101,10 @@ def create_employee_ui():
             "emergency_contact_phone": emergency_contact_phone,
             "notes": notes,
         }
-        st.json(data)
+        # st.json(data)
         new_employee = create_employee(data)
-        st.write(new_employee)
-        # st.success("員工資料已新增！請重新整理頁面。")
-        # st.rerun()
+        # st.write(new_employee)
+        st.rerun()
 
 
 @st.dialog("✏️ 編輯員工資料")
@@ -172,7 +172,7 @@ with tab1:
     else:
         st.write("目前查無員工資料，請先設定員工資料。")
         if st.button("新增員工資料"):
-            create_employee_ui()
+            create_employee_ui(line_id=selected_user['UserID'])
 
 with tab2:
     pass
