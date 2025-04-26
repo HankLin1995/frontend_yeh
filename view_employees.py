@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-
+import datetime
 
 from api import (
     BASE_URL,
@@ -10,7 +10,10 @@ from api import (
     create_employee,
     get_certificates,
     upload_certificate_file,
-    delete_certificate
+    delete_certificate,
+    create_salary,
+    get_salaries,
+    delete_salary
 )
 
 def get_active_employee():
@@ -71,6 +74,7 @@ def display_employee(employee):
 
     ---
             """)
+            display_salary_metric(employee)
     
         
     if st.button("✏️ 編輯員工資料",key="edit_employee"):
@@ -183,7 +187,8 @@ def create_certificate_ui(employee_id):
         )
         st.success("證照資料已新增！請重新整理頁面。")
         st.rerun()
-def display_certificates(employee_id):
+
+def display_certificates_table_view(employee_id):
     df_cert = pd.DataFrame(get_certificates(employee_id))
     if df_cert.empty:
         st.warning("目前查無證照資料，請先設定證照資料。")
@@ -204,40 +209,115 @@ def display_certificates(employee_id):
                 st.success("證照資料已刪除！請重新整理頁面。")
                 st.rerun()
 
-# def display_certificates(employee_id):
+def display_certificates_df_view(employee_id):
     
-#     df_cert = pd.DataFrame(get_certificates(employee_id))
+    df_cert = pd.DataFrame(get_certificates(employee_id))
     
-#     if df_cert.empty:
-#         st.write("目前查無證照資料，請先設定證照資料。")
-#     else:
+    if df_cert.empty:
+        st.write("目前查無證照資料，請先設定證照資料。")
+    else:
 
-#         event = st.dataframe(
-#             df_cert,
-#             hide_index=True,
-#             on_select="rerun",
-#             selection_mode="multi-row"
-#         )
+        event = st.dataframe(
+            df_cert,
+            hide_index=True,
+            on_select="rerun",
+            selection_mode="multi-row"
+        )
 
-#         select_users = event.selection.rows
-#         filtered_df = df_cert.iloc[select_users]
+        select_users = event.selection.rows
+        filtered_df = df_cert.iloc[select_users]
 
-#         if filtered_df.empty:
-#             pass
-#         else:
-#             if st.button("刪除證照",key="delete_certificate"):
-#                 delete_certificate(int(filtered_df["id"]))
-#                 st.success("證照資料已刪除！請重新整理頁面。")
-#                 st.rerun()
+        if filtered_df.empty:
+            pass
+        else:
+            if st.button("刪除證照",key="delete_certificate"):
+                delete_certificate(int(filtered_df["id"]))
+                st.success("證照資料已刪除！請重新整理頁面。")
+                st.rerun()
 
-# 顯示員工、薪資、證照(分成tab)
+@st.dialog("➕ 新增薪資紀錄")
+def create_salary_ui(employee_id,df_salary):
+    
+    if not df_salary.empty:
+        old_daily_wage = df_salary['new_daily_wage'].iloc[-1]
+    else:
+        old_daily_wage = 0
+    
+    new_daily_wage = st.number_input("薪資金額", min_value=0, value=30000)
+    salary_date = st.date_input("薪資日期", value=datetime.date.today())
+    note = st.text_input("備註")
+
+    if st.button("新增"):
+
+        create_salary({
+            'employee_id': employee_id,
+            'adjustment_date': str(salary_date),
+            'new_daily_wage': new_daily_wage,
+            'old_daily_wage':old_daily_wage,
+            'adjustment_reason': note
+        })
+        st.success("薪資紀錄已新增！請重新整理頁面。")
+        st.rerun()
+
+
+
+def display_salary_metric(employee):
+
+    salaries = get_salaries(employee['id'])
+    df_salary = pd.DataFrame(salaries)
+    if df_salary.empty:
+        st.warning("目前查無薪資資料。")
+    else:
+
+        diff=df_salary['new_daily_wage'].iloc[-1]-df_salary['old_daily_wage'].iloc[-1]
+        # 顯示目前薪資
+
+        # with st.container(border=True):
+        if df_salary['old_daily_wage'].iloc[-1]!=0:
+            st.metric("目前薪資", f"{int(df_salary['new_daily_wage'].iloc[-1]):,}", int(diff))
+        else:
+            st.metric("目前薪資", f"{int(df_salary['new_daily_wage'].iloc[-1]):,}")
+
+        st.badge("生效日:"+df_salary['adjustment_date'].iloc[-1],color="green")
+
+def display_salaries():
+    st.markdown("### 💰 薪資紀錄")
+
+    salaries = get_salaries(employee['id'])
+    df_salary = pd.DataFrame(salaries)
+    if df_salary.empty:
+        st.warning("目前查無薪資資料。")
+    else:
+        st.dataframe(
+            df_salary,
+            column_config={
+                "old_daily_wage": st.column_config.NumberColumn("原始薪資"),
+                "new_daily_wage": st.column_config.NumberColumn("目前薪資"),
+                "adjustment_date": st.column_config.TextColumn("更動日期"),
+                "adjustment_reason": st.column_config.TextColumn("備註"),
+                "id": None,
+                "employee_id":None
+            },
+            hide_index=True,
+            on_select="rerun",
+            selection_mode="multi-row"
+        )
+
+        if st.button("刪除最近一筆",key="delete_salary"):
+            delete_salary(len(df_salary))
+            st.success("證照資料已刪除！請重新整理頁面。")
+            st.rerun()
+
+    st.markdown("---")
+
+    return df_salary
 
 #emoji
 st.markdown("")
 
 selected_user=get_active_employee()
 
-tab1, tab2, tab3 = st.tabs(["🧑‍💼基本資料", "🏅 證照", "💰 薪資"])
+tab1, tab2, tab3, tab4 = st.tabs(["🧑‍💼基本資料", "🏅 證照", "💰 薪資","⏰ 打卡紀錄(開發中)"])
 
 with tab1:
     employee = get_employee_detail(selected_user['UserID'])
@@ -254,7 +334,7 @@ with tab1:
 with tab2:
 
     if not "detail" in employee:
-        display_certificates(employee['id'])
+        display_certificates_table_view(employee['id'])
 
         st.markdown("---")
 
@@ -265,4 +345,13 @@ with tab2:
         st.warning("目前查無資料。")
         
 with tab3:
+    if not "detail" in employee:
+        df_salary=display_salaries()
+        if st.button("➕ 新增薪資紀錄"):
+            create_salary_ui(employee['id'],df_salary)
+
+    else:
+        st.warning("目前查無員工資料，請先設定員工資料。")
+
+with tab4:
     pass

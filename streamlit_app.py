@@ -4,12 +4,12 @@ import requests
 import os
 from api import create_user, get_user
 
-VERSION_NUMBER = "V2.0"
+VERSION_NUMBER = "V2.1"
 
 st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon=":derelict_house_building:", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")
 
-test_mode=True
+test_mode=False
 
 if test_mode==True:
 
@@ -142,12 +142,12 @@ else:
 
     # PAGES
 
-    user_page=st.Page("view_users.py",title="用戶管理",icon=":material/account_circle:")
+    user_page=st.Page("view_users.py",title="登入管理",icon=":material/account_circle:")
     group_page=st.Page("view_groups.py",title="群組管理",icon=":material/account_circle:")
     case_page=st.Page("view_cases.py",title="案件管理",icon=":material/account_circle:")
     photo_page=st.Page("view_photos.py",title="照片管理",icon=":material/camera_alt:")
     photo_readonly_page=st.Page("view_photos_readonly.py",title="照片瀏覽",icon=":material/camera_alt:")
-    employee_page=st.Page("view_employees.py",title="員工管理",icon=":material/account_circle:")
+    employee_page=st.Page("view_employees.py",title="員工資料",icon=":material/account_circle:")
 
     # NAVIGATION
 

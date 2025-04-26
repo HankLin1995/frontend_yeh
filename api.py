@@ -209,8 +209,14 @@ def create_salary(data):
     resp.raise_for_status()
     return resp.json()
 
-def update_salary(salary_id, data):
-
-    resp = requests.patch(f"{BASE_URL}/employees/salaries/{salary_id}", json=data)
+def delete_salary(salary_id):
+    
+    resp = requests.delete(f"{BASE_URL}/employees/salaries/{salary_id}")
     resp.raise_for_status()
     return resp.json()
+
+# def update_salary(salary_id, data):
+    
+#     resp = requests.patch(f"{BASE_URL}/employees/salaries/{salary_id}", json=data)
+#     resp.raise_for_status()
+#     return resp.json()
