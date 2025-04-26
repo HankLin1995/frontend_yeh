@@ -195,16 +195,64 @@ def delete_certificate(certificate_id):
     resp.raise_for_status()
     return resp.json()
 
+# ====== 設備管理 ======
+
+def get_equipments(skip=0, limit=100, name=None, status=None):
+    params = {"skip": skip, "limit": limit}
+    if name:
+        params["name"] = name
+    if status:
+        params["status"] = status
+    resp = requests.get(f"{BASE_URL}/equipments/", params=params)
+    resp.raise_for_status()
+    return resp.json()
+
+def get_equipment_detail(equipment_id):
+    resp = requests.get(f"{BASE_URL}/equipments/{equipment_id}")
+    resp.raise_for_status()
+    return resp.json()
+
+def create_equipment(data):
+    resp = requests.post(f"{BASE_URL}/equipments/", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def update_equipment(equipment_id, data):
+    resp = requests.put(f"{BASE_URL}/equipments/{equipment_id}", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def delete_equipment(equipment_id):
+    resp = requests.delete(f"{BASE_URL}/equipments/{equipment_id}")
+    resp.raise_for_status()
+    return resp.json()
+
+# 借用紀錄
+
+def create_equipment_borrow_log(data):
+    resp = requests.post(f"{BASE_URL}/equipments/borrow", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def get_equipment_borrow_log(log_id):
+    resp = requests.get(f"{BASE_URL}/equipments/borrow/{log_id}")
+    resp.raise_for_status()
+    return resp.json()
+
+def get_equipment_borrow_logs(equipment_id, skip=0, limit=100):
+    params = {"skip": skip, "limit": limit}
+    resp = requests.get(f"{BASE_URL}/equipments/{equipment_id}/borrow_logs", params=params)
+    resp.raise_for_status()
+    return resp.json()
+
 # 薪資
 
 def get_salaries(employee_id):
-
     resp = requests.get(f"{BASE_URL}/employees/{employee_id}/salaries")
     resp.raise_for_status()
     return resp.json()
 
 def create_salary(data):
-
     resp = requests.post(f"{BASE_URL}/employees/salaries/", json=data)
     resp.raise_for_status()
     return resp.json()

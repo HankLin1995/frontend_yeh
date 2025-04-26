@@ -9,7 +9,7 @@ VERSION_NUMBER = "V2.1"
 st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon=":derelict_house_building:", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")
 
-test_mode=False
+test_mode=True
 
 if test_mode==True:
 
@@ -148,6 +148,7 @@ else:
     photo_page=st.Page("view_photos.py",title="照片管理",icon=":material/camera_alt:")
     photo_readonly_page=st.Page("view_photos_readonly.py",title="照片瀏覽",icon=":material/camera_alt:")
     employee_page=st.Page("view_employees.py",title="員工資料",icon=":material/account_circle:")
+    equipment_page=st.Page("view_equipment.py",title="設備管理",icon=":material/account_circle:")
 
     # NAVIGATION
 
@@ -156,7 +157,8 @@ else:
         pg=st.navigation(
             {
                 "基本設定":[user_page,group_page,case_page,employee_page],
-                "工作內容":[photo_page,photo_readonly_page]
+                "工作內容":[photo_page,photo_readonly_page],
+                "設備管理":[equipment_page]
             }
         )
 
