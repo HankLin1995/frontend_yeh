@@ -1,8 +1,11 @@
 import streamlit as st
 import pandas as pd
+import io
 from api import (
     get_equipments,
-    create_equipment
+    create_equipment,
+    update_equipment,
+    delete_equipment
 )
 
 @st.dialog("➕ 新增機具")
@@ -52,8 +55,79 @@ def display_equipments(df):
         'Status': '狀態'
     }, inplace=True)
 
-    st.dataframe(df_equipments, hide_index=True)
+    event = st.dataframe(
+        df_equipments,
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="multi-row"
+    )
 
+    select_equipments = event.selection.rows
+    filtered_df = df.iloc[select_equipments]
+
+    if filtered_df.empty:
+        pass
+    else:
+        if st.button("🗑️ 刪除機具"):
+            for index, row in filtered_df.iterrows():
+                delete_equipment(row["EquipmentID"])
+            st.success("機具刪除成功！")
+            st.cache_data.clear()
+            st.rerun()
+
+def example_download():
+    equipment_example = pd.DataFrame([
+        {
+            '設備名稱': '範例機具',
+            '單位': '台',
+            '價值': 10000,
+            '耐用年限': 5,
+            '購置日期': '2023-01-01',
+            '下次保養日': '2024-01-01',
+            '狀態': '可用',
+        }
+    ])
+    excel_buffer = io.BytesIO()
+    equipment_example.to_excel(excel_buffer, index=False)
+    excel_buffer.seek(0)
+
+    st.download_button(
+        label="下載匯入範例檔",
+        data=excel_buffer,
+        file_name="equipment_import_template.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+@st.dialog("🗂️ 匯入機具")
+def import_equipments():
+
+    uploaded_file = st.file_uploader("請選擇要匯入的Excel檔案", type=["xlsx", "xls", "csv"])
+    if uploaded_file is not None:
+        try:
+            if uploaded_file.name.endswith("csv"):
+                df_import = pd.read_csv(uploaded_file)
+            else:
+                df_import = pd.read_excel(uploaded_file)
+            st.write("### 預覽匯入資料：")
+            st.dataframe(df_import)
+            if st.button("確認匯入資料", key="import_equipment_confirm"):
+                # 這裡可根據實際API批次匯入需求進行呼叫
+                for row in df_import.to_dict(orient="records"):
+                    data = {
+                        'Name': row['設備名稱'],
+                        'Unit': row['單位'],
+                        'Value': row['價值'],
+                        'Lifespan': row['耐用年限'],
+                        'PurchaseDate': str(row['購置日期']),
+                        'NextMaintenance': str(row['下次保養日']),
+                        'Status': row['狀態']
+                    }
+                    create_equipment(data)
+                st.success("匯入成功！")
+                st.cache_data.clear()
+                st.rerun()
+        except Exception as e:
+            st.error(f"匯入失敗：{e}")
 
 equipments=get_equipments()
 
@@ -61,7 +135,10 @@ df_equipments = pd.DataFrame(equipments)
 
 st.markdown("### 🛠️ 機具清單")
 
-display_equipments(df_equipments)
+if df_equipments.empty:
+    st.write("目前沒有機具資料")
+else:
+    display_equipments(df_equipments)
 
 st.markdown("---")
 
@@ -70,8 +147,11 @@ if st.button("➕ 新增機具"):
 
 ## SIDEBAR
 
-if st.sidebar.button("🗂️匯入檔案"):
-    pass
+with st.sidebar:
     
+    st.markdown("#### 機具匯入/範例下載")
+    example_download()
 
-
+    if st.button("🗂️ 匯入機具"):
+        import_equipments()
+        
