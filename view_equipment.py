@@ -43,20 +43,19 @@ def display_equipments(df):
     ## change columns order
     df_equipments = df[['EquipmentID', 'Name','Unit', 'Value', 'Lifespan', 'PurchaseDate', 'NextMaintenance', 'Status']]
 
-    ## rename columns
-    df_equipments.rename(columns={
-        'EquipmentID': '機具ID',
-        'Name': '設備名稱',
-        'Unit': '單位',
-        'Value': '價值',
-        'Lifespan': '耐用年限',
-        'PurchaseDate': '購置日期',
-        'NextMaintenance': '下次保養日',
-        'Status': '狀態'
-    }, inplace=True)
 
     event = st.dataframe(
         df_equipments,
+        column_config={
+            'EquipmentID': '機具ID',
+            'Name': '設備名稱',
+            'Unit': '單位',
+            'Value': '價值',
+            'Lifespan': '耐用年限',
+            'PurchaseDate': '購置日期',
+            'NextMaintenance': '下次保養日',
+            'Status': '狀態'
+        },
         hide_index=True,
         on_select="rerun",
         selection_mode="multi-row"
@@ -92,7 +91,7 @@ def example_download():
     excel_buffer.seek(0)
 
     st.download_button(
-        label="下載匯入範例檔",
+        label="📥 下載範例檔",
         data=excel_buffer,
         file_name="equipment_import_template.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -154,4 +153,6 @@ with st.sidebar:
 
     if st.button("🗂️ 匯入機具"):
         import_equipments()
-        
+
+    if st.button("🖨️ 輸出QRCODE"):
+        st.toast("輸出QRCODE開發中...", icon="⚠️")

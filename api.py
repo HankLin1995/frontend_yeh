@@ -197,7 +197,7 @@ def delete_certificate(certificate_id):
 
 # ====== 材料管理 ======
 
-def get_materials(skip=0, limit=100, name=None, unit=None):
+def get_materials(skip=0, limit=1000, name=None, unit=None):
     params = {"skip": skip, "limit": limit}
     if name:
         params["name"] = name
@@ -207,9 +207,10 @@ def get_materials(skip=0, limit=100, name=None, unit=None):
     resp.raise_for_status()
     return resp.json()
 
+# return status
 def create_material(data):
     resp = requests.post(f"{BASE_URL}/materials/", json=data)
-    resp.raise_for_status()
+    # resp.raise_for_status()
     return resp.json()
 
 def update_material(material_id, data):
@@ -224,7 +225,7 @@ def delete_material(material_id):
 
 # ====== 設備管理 ======
 
-def get_equipments(skip=0, limit=100, name=None, status=None):
+def get_equipments(skip=0, limit=1000, name=None, status=None):
     params = {"skip": skip, "limit": limit}
     if name:
         params["name"] = name
@@ -241,7 +242,7 @@ def get_equipment_detail(equipment_id):
 
 def create_equipment(data):
     resp = requests.post(f"{BASE_URL}/equipments/", json=data)
-    resp.raise_for_status()
+    # resp.raise_for_status()
     return resp.json()
 
 def update_equipment(equipment_id, data):

@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import io
 from api import (
     get_materials,
     create_material
@@ -26,25 +27,103 @@ def material_form(material=None, mode='create'):
                 'StockQuantity': stock_quantity,
                 'SafetyStock': safety_stock
             }
-            create_material(data)
-            st.success("材料新增成功！")
+            try:
+                create_material(data)
+                st.success("材料新增成功！")
+            except Exception as e:
+                st.error(f"新增失敗：{e}")
             st.rerun()
     return None
 
 def display_materials(df):
-    # 顯示所有主要欄位
+    # 只顯示主要欄位，並用 column_config 中文化
     df_materials = df[['MaterialID', 'Name', 'Unit', 'UnitPrice', 'Content', 'StockQuantity', 'SafetyStock']]
-    df_materials.rename(columns={
-        'MaterialID': '材料ID',
-        'Name': '材料名稱',
-        'Unit': '單位',
-        'UnitPrice': '單價',
-        'Content': '說明',
-        'StockQuantity': '庫存量',
-        'SafetyStock': '安全庫存',
-        'CreateTime': None
-    }, inplace=True)
-    st.dataframe(df_materials, hide_index=True)
+    event = st.dataframe(
+        df_materials,
+        column_config={
+            'MaterialID': '材料ID',
+            'Name': '材料名稱',
+            'Unit': '單位',
+            'UnitPrice': '單價',
+            'Content': '說明',
+            'StockQuantity': '庫存量',
+            'SafetyStock': '安全庫存',
+        },
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="multi-row"
+    )
+
+    select_materials = event.selection.rows
+    filtered_df = df.iloc[select_materials]
+
+    if filtered_df.empty:
+        pass
+    else:
+        if st.button("🗑️ 刪除材料"):
+            from api import delete_material
+            for _, row in filtered_df.iterrows():
+                try:
+                    delete_material(row["MaterialID"])
+                except Exception as e:
+                    st.error(f"刪除失敗：{e}")
+            st.success("材料刪除成功！")
+            st.cache_data.clear()
+            st.rerun()
+
+
+def example_download():
+    material_example = pd.DataFrame([
+        {
+            '材料名稱': '水泥',
+            '單位': '包',
+            '單價': 150,
+            '說明': '灰色水泥',
+            '庫存量': 100,
+            '安全庫存': 10,
+        }
+    ])
+    excel_buffer = io.BytesIO()
+    material_example.to_excel(excel_buffer, index=False)
+    excel_buffer.seek(0)
+
+    st.download_button(
+        label="📥 下載範例檔",
+        data=excel_buffer,
+        file_name="material_import_template.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+@st.dialog("🗂️ 匯入材料")
+def import_materials():
+    uploaded_file = st.file_uploader("請選擇要匯入的Excel檔案", type=["xlsx", "xls", "csv"])
+    if uploaded_file is not None:
+        try:
+            if uploaded_file.name.endswith("csv"):
+                df_import = pd.read_csv(uploaded_file)
+            else:
+                df_import = pd.read_excel(uploaded_file)
+            st.write("### 預覽匯入資料：")
+            st.dataframe(df_import)
+            if st.button("確認匯入資料", key="import_material_confirm"):
+                for row in df_import.to_dict(orient="records"):
+                    data = {
+                        'Name': row['材料名稱'],
+                        'Unit': row['單位'],
+                        'UnitPrice': row['單價'],
+                        'Content': row['說明'],
+                        'StockQuantity': row['庫存量'],
+                        'SafetyStock': row['安全庫存']
+                    }
+                    try:
+                        create_material(data)
+                    except Exception as e:
+                        st.error(f"匯入失敗：{e}")
+                st.success("匯入成功！")
+                st.cache_data.clear()
+                st.rerun()
+        except Exception as e:
+            st.error(f"匯入失敗：{e}")
 
 ##### MAIN UI #####
 
@@ -63,6 +142,13 @@ st.markdown("---")
 if st.button("➕ 新增材料"):
     material_form()
 
-##### SIDE BAR #####
-if st.sidebar.button("🗂️匯入檔案"):
-    pass
+with st.sidebar:
+
+    st.markdown("#### 材料匯入/範例下載")
+    example_download()
+
+    if st.button("🗂️ 匯入材料"):
+        import_materials()
+
+    if st.button("🖨️ 輸出QRCODE"):
+        st.toast("輸出QRCODE開發中...", icon="⚠️")

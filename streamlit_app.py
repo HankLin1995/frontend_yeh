@@ -4,12 +4,12 @@ import requests
 import os
 from api import create_user, get_user
 
-VERSION_NUMBER = "V2.2.0"
+VERSION_NUMBER = "V2.2.1"
 
 st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon=":derelict_house_building:", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")
 
-test_mode=True
+test_mode=False
 
 if test_mode==True:
 
@@ -147,9 +147,9 @@ else:
     case_page=st.Page("view_cases.py",title="案件管理",icon=":material/account_circle:")
     photo_page=st.Page("view_photos.py",title="照片管理",icon=":material/camera_alt:")
     photo_readonly_page=st.Page("view_photos_readonly.py",title="照片瀏覽",icon=":material/camera_alt:")
-    employee_page=st.Page("view_employees.py",title="員工資料",icon=":material/account_circle:")
-    equipment_page=st.Page("view_equipment.py",title="機具管理",icon=":material/account_circle:")
-    material_page=st.Page("view_materials.py",title="材料管理",icon=":material/account_circle:")
+    employee_page=st.Page("view_employees.py",title="員工資料✨",icon=":material/account_circle:")
+    equipment_page=st.Page("view_equipment.py",title="機具管理✨",icon=":material/account_circle:")
+    material_page=st.Page("view_materials.py",title="材料管理✨",icon=":material/account_circle:")
 
     # NAVIGATION
 
