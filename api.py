@@ -195,6 +195,33 @@ def delete_certificate(certificate_id):
     resp.raise_for_status()
     return resp.json()
 
+# ====== 材料管理 ======
+
+def get_materials(skip=0, limit=100, name=None, unit=None):
+    params = {"skip": skip, "limit": limit}
+    if name:
+        params["name"] = name
+    if unit:
+        params["unit"] = unit
+    resp = requests.get(f"{BASE_URL}/materials/", params=params)
+    resp.raise_for_status()
+    return resp.json()
+
+def create_material(data):
+    resp = requests.post(f"{BASE_URL}/materials/", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def update_material(material_id, data):
+    resp = requests.put(f"{BASE_URL}/materials/{material_id}", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def delete_material(material_id):
+    resp = requests.delete(f"{BASE_URL}/materials/{material_id}")
+    resp.raise_for_status()
+    return resp.json()
+
 # ====== 設備管理 ======
 
 def get_equipments(skip=0, limit=100, name=None, status=None):
