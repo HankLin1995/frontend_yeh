@@ -1,0 +1,4 @@
+venv/
+streamlit_app/uploads
+streamlit_app/approved
+streamlit_app/rejected

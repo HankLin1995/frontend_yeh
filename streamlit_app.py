@@ -4,12 +4,12 @@ import requests
 import os
 from api import create_user, get_user
 
-VERSION_NUMBER = "V2.2.1"
+VERSION_NUMBER = "V2.3.0"
 
 st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon=":derelict_house_building:", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")
 
-test_mode=False
+test_mode=True
 
 if test_mode==True:
 
@@ -151,6 +151,11 @@ else:
     equipment_page=st.Page("view_equipment.py",title="機具管理✨",icon=":material/account_circle:")
     material_page=st.Page("view_materials.py",title="材料管理✨",icon=":material/account_circle:")
 
+    if st.session_state.user_role!="admin":
+        mobile_page=st.Page("view_mobile.py",title="勤務回報✨",icon=":material/account_circle:",default=True)
+    else:
+        mobile_page=st.Page("view_mobile.py",title="勤務回報✨",icon=":material/account_circle:")
+
     # NAVIGATION
 
     if st.session_state.user_role=="admin" :
@@ -160,6 +165,7 @@ else:
                 "設定":[user_page,group_page,case_page,equipment_page,material_page],
                 "人事":[employee_page],
                 "施工":[photo_page,photo_readonly_page],
+                "勤務回報":[mobile_page]
             }
         )
 
@@ -170,7 +176,8 @@ else:
         pg=st.navigation(
             {
                 "基本設定":[group_page,case_page],
-                "工作內容":[photo_page]
+                "工作內容":[photo_page],
+                "勤務回報":[mobile_page]
             }
         ) 
 
@@ -180,7 +187,8 @@ else:
 
         pg=st.navigation(
             {
-                "工作內容":[photo_readonly_page]
+                "工作內容":[photo_readonly_page],
+                "勤務回報":[mobile_page]
             }
         )
 
