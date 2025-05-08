@@ -85,10 +85,6 @@ def safety_check():
         st.session_state.safety_check_result = True
         st.rerun()
 
-def get_user_photo(pic_key):
-    st.markdown("### 📸 自拍照片")
-    pic = st.camera_input("照片:", key=pic_key)
-    return pic
 
 def calculate_work_hours(clock_in_time, clock_out_time):
     """計算工作時間"""
@@ -124,7 +120,8 @@ def calculate_work_hours(clock_in_time, clock_out_time):
 
 def clock_in():
 
-    upload_photo=get_user_photo("clock_in_photo")
+    st.markdown("### 📸 上班自拍照片")
+    upload_photo = st.camera_input("照片:", key="clock_in_photo")
 
     cases=get_cases()
 
@@ -154,7 +151,6 @@ def clock_in():
 
                 create_clock_in(data)
 
-                # st.write(response.json())
                 st.session_state.safety_check_result=False
                 st.rerun()
 
@@ -164,15 +160,11 @@ def clock_out(attendance_id , clock_in_time):
     st.markdown("上班時間")
     st.info(dt.strftime("%Y-%m-%d %H:%M:%S"))
 
-    upload_photo=get_user_photo("clock_out_photo")
+    st.markdown("### 📸 下班自拍照片")
+    upload_photo = st.camera_input("照片:", key="clock_out_photo")
     
     if upload_photo is not None:
         photo_base64 = base64.b64encode(upload_photo.read()).decode()
-        
-        # data={
-        #     "ClockOutPhoto":photo_base64
-        # }
-
         st.markdown("下班時間")
         st.info(datetime.now(taiwan_tz).strftime("%Y-%m-%d %H:%M:%S"))
         st.markdown("累計工作時數")
@@ -183,24 +175,21 @@ def clock_out(attendance_id , clock_in_time):
                 "ClockOutPhoto":photo_base64
             }      
             create_clock_out(attendance_id,data)
-            # response=requests.post(f"{BASE_URL}/attendance/{attendance_id}/clock-out",json=data)
-            # st.write(response.json())
             st.rerun()
 
 def attendance_page():
 
-    # res=requests.get(f"{BASE_URL}/attendance/query?UserID=U81cd82f7e60a4bf88a100fc6e08e5a3f")
-    # st.write(res.json())
     res=get_attendance_by_user_id(st.session_state.user_id)
 
     if res[len(res)-1]["ClockOutTime"] is None:
+
         attendance_id=res[len(res)-1]["AttendanceID"]
         clock_in_time=res[len(res)-1]["ClockInTime"]
+
         clock_out(attendance_id,clock_in_time)
-        # st.write("等待下班")
     else:
         clock_in()
-        # st.write("準備上班")
+
 
 def construction_page():
     st.title("施工日誌")
