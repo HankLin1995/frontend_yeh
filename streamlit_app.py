@@ -150,11 +150,8 @@ else:
     employee_page=st.Page("view_employees.py",title="員工資料✨",icon=":material/account_circle:")
     equipment_page=st.Page("view_equipment.py",title="機具管理✨",icon=":material/account_circle:")
     material_page=st.Page("view_materials.py",title="材料管理✨",icon=":material/account_circle:")
+    mobile_page=st.Page("view_mobile.py",title="勤務回報✨",icon=":material/account_circle:",default=True)
 
-    if st.session_state.user_role!="admin":
-        mobile_page=st.Page("view_mobile.py",title="勤務回報✨",icon=":material/account_circle:",default=True)
-    else:
-        mobile_page=st.Page("view_mobile.py",title="勤務回報✨",icon=":material/account_circle:")
 
     # NAVIGATION
 
