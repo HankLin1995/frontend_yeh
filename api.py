@@ -291,8 +291,19 @@ def delete_salary(salary_id):
     resp.raise_for_status()
     return resp.json()
 
-# def update_salary(salary_id, data):
-    
-#     resp = requests.patch(f"{BASE_URL}/employees/salaries/{salary_id}", json=data)
-#     resp.raise_for_status()
-#     return resp.json()
+# ====== 打卡 ======
+
+def create_clock_in(data):
+    resp = requests.post(f"{BASE_URL}/attendance/clock-in", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def create_clock_out(attendance_id,data):
+    resp = requests.post(f"{BASE_URL}/attendance/{attendance_id}/clock-out", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def get_attendance_by_user_id(user_id):
+    resp = requests.get(f"{BASE_URL}/attendance/query?UserID={user_id}")
+    resp.raise_for_status()
+    return resp.json()

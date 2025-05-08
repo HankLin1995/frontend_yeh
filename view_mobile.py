@@ -1,15 +1,16 @@
 import streamlit as st
-import requests
+# import requests
 import base64
 import pytz
 from datetime import datetime
+from api import BASE_URL,create_clock_in,create_clock_out,get_attendance_by_user_id,get_cases
 
 if "safety_check_result" not in st.session_state:
     st.session_state.safety_check_result = False
 
 taiwan_tz = pytz.timezone('Asia/Taipei')
 
-API_URL="http://app:8000"
+# API_URL="http://localhost:8000"
 
 @st.dialog(title="⚠️ 每日出工前勤前教育")
 def safety_check():
@@ -121,59 +122,56 @@ def calculate_work_hours(clock_in_time, clock_out_time):
         st.error(f"計算工作時間錯誤: {str(e)}")
         return "計算錯誤"
 
-
 def clock_in():
 
     upload_photo=get_user_photo("clock_in_photo")
 
-    cases=requests.get(f"{API_URL}/cases")
+    cases=get_cases()
 
-    case_options={case["CaseID"]:case["Name"] for case in cases.json()}
+    case_options={case["CaseID"]:case["Name"] for case in cases}
     selected_case_id=st.selectbox("選擇案件",options=list(case_options.keys()),format_func=lambda x: case_options.get(x,x))
 
     if upload_photo is not None:
         photo_base64 = base64.b64encode(upload_photo.read()).decode()
         
-        data={
-            "CaseID":selected_case_id,
-            "UserID":"U81cd82f7e60a4bf88a100fc6e08e5a3f",
-            "IsTrained":True,
-            "ClockInPhoto":photo_base64
-        }
-
         if st.session_state.safety_check_result==False:
             if st.button("執行勤前教育訓練"):
                 safety_check()
         else:
             st.markdown("上班打卡時間")
             now = datetime.now(taiwan_tz)
-            # 格式化：年-月-日 時:分:秒
             formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
             st.info(formatted_time)
 
             if st.button("簽到",type='primary',use_container_width=True):
-                response=requests.post(f"{API_URL}/attendance/clock-in",json=data)
+
+                data={
+                    "CaseID":selected_case_id,
+                    "UserID":st.session_state.user_id,
+                    "IsTrained":True,
+                    "ClockInPhoto":photo_base64
+                }
+
+                create_clock_in(data)
+
                 # st.write(response.json())
                 st.session_state.safety_check_result=False
                 st.rerun()
 
 def clock_out(attendance_id , clock_in_time):
-    
 
     dt = datetime.fromisoformat(clock_in_time)
     st.markdown("上班時間")
     st.info(dt.strftime("%Y-%m-%d %H:%M:%S"))
-    # st.info("下班打卡時間="+datetime.now(taiwan_tz).strftime("%Y-%m-%d %H:%M:%S"))
-    # st.info("累計工作時數="+str(calculate_work_hours(clock_in_time,datetime.now(taiwan_tz))))
 
     upload_photo=get_user_photo("clock_out_photo")
     
     if upload_photo is not None:
         photo_base64 = base64.b64encode(upload_photo.read()).decode()
         
-        data={
-            "ClockOutPhoto":photo_base64
-        }
+        # data={
+        #     "ClockOutPhoto":photo_base64
+        # }
 
         st.markdown("下班時間")
         st.info(datetime.now(taiwan_tz).strftime("%Y-%m-%d %H:%M:%S"))
@@ -181,18 +179,23 @@ def clock_out(attendance_id , clock_in_time):
         st.info(str(calculate_work_hours(clock_in_time,datetime.now(taiwan_tz))))
 
         if st.button("簽退",type='primary',use_container_width=True):
-            response=requests.post(f"{API_URL}/attendance/{attendance_id}/clock-out",json=data)
+            data={
+                "ClockOutPhoto":photo_base64
+            }      
+            create_clock_out(attendance_id,data)
+            # response=requests.post(f"{BASE_URL}/attendance/{attendance_id}/clock-out",json=data)
             # st.write(response.json())
             st.rerun()
 
 def attendance_page():
 
-    res=requests.get(f"{API_URL}/attendance/query?UserID=U81cd82f7e60a4bf88a100fc6e08e5a3f")
+    # res=requests.get(f"{BASE_URL}/attendance/query?UserID=U81cd82f7e60a4bf88a100fc6e08e5a3f")
     # st.write(res.json())
+    res=get_attendance_by_user_id(st.session_state.user_id)
 
-    if res.json()[len(res.json())-1]["ClockOutTime"] is None:
-        attendance_id=res.json()[len(res.json())-1]["AttendanceID"]
-        clock_in_time=res.json()[len(res.json())-1]["ClockInTime"]
+    if res[len(res)-1]["ClockOutTime"] is None:
+        attendance_id=res[len(res)-1]["AttendanceID"]
+        clock_in_time=res[len(res)-1]["ClockInTime"]
         clock_out(attendance_id,clock_in_time)
         # st.write("等待下班")
     else:
