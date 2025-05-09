@@ -307,3 +307,36 @@ def get_attendance_by_user_id(user_id):
     resp = requests.get(f"{BASE_URL}/attendance/query?UserID={user_id}")
     resp.raise_for_status()
     return resp.json()
+
+# ====== 工作日誌 ======
+
+def get_worklogs(skip=0, limit=100):
+    params = {"skip": skip, "limit": limit}
+    resp = requests.get(f"{BASE_URL}/worklogs", params=params)
+    resp.raise_for_status()
+    return resp.json()
+
+def get_worklog(worklog_id):
+    resp = requests.get(f"{BASE_URL}/worklogs/{worklog_id}")
+    resp.raise_for_status()
+    return resp.json()
+
+def get_worklogs_by_user_id(user_id,work_date):
+    resp = requests.get(f"{BASE_URL}/worklogs/?UserID={user_id}&WorkDate={work_date}")
+    resp.raise_for_status()
+    return resp.json()
+
+def create_worklog(data):
+    resp = requests.post(f"{BASE_URL}/worklogs", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def update_worklog(worklog_id, data):
+    resp = requests.put(f"{BASE_URL}/worklogs/{worklog_id}", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def delete_worklog(worklog_id):
+    resp = requests.delete(f"{BASE_URL}/worklogs/{worklog_id}")
+    resp.raise_for_status()
+    return resp.json()
