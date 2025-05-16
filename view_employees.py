@@ -367,6 +367,10 @@ with tab4:
 
     df_cases=pd.DataFrame(get_cases())
 
+    if df_attendance.empty:
+        st.warning("目前查無打卡資料。")
+        st.stop()
+
     df_attendance['CaseID']=df_attendance['CaseID'].apply(lambda x: df_cases[df_cases['CaseID']==x]['Name'].values[0])
 
     #照片用image顯示
