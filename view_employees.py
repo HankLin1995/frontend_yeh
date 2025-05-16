@@ -369,45 +369,45 @@ with tab4:
 
     if df_attendance.empty:
         st.warning("目前查無打卡資料。")
-        st.stop()
+    else:
 
-    df_attendance['CaseID']=df_attendance['CaseID'].apply(lambda x: df_cases[df_cases['CaseID']==x]['Name'].values[0])
+        df_attendance['CaseID']=df_attendance['CaseID'].apply(lambda x: df_cases[df_cases['CaseID']==x]['Name'].values[0])
 
-    #照片用image顯示
-    df_attendance['ClockInPhoto']=df_attendance['ClockInPhoto'].apply(lambda x: BASE_URL+"/"+x)
-    df_attendance['ClockOutPhoto']=df_attendance['ClockOutPhoto'].apply(lambda x: BASE_URL+"/"+x)
-    
-    import datetime
+        #照片用image顯示
+        df_attendance['ClockInPhoto']=df_attendance['ClockInPhoto'].apply(lambda x: BASE_URL+"/"+x)
+        df_attendance['ClockOutPhoto']=df_attendance['ClockOutPhoto'].apply(lambda x: BASE_URL+"/"+x)
+        
+        import datetime
 
-    # 將字串轉為 datetime 物件，再轉為指定格式的字串
-    df_attendance['ClockInTime'] = df_attendance['ClockInTime'].apply(
-        lambda x: datetime.datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S")
-    )
+        # 將字串轉為 datetime 物件，再轉為指定格式的字串
+        df_attendance['ClockInTime'] = df_attendance['ClockInTime'].apply(
+            lambda x: datetime.datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S")
+        )
 
-    df_attendance['ClockOutTime'] = df_attendance['ClockOutTime'].apply(
-        lambda x: datetime.datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S")
-    )
+        df_attendance['ClockOutTime'] = df_attendance['ClockOutTime'].apply(
+            lambda x: datetime.datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S")
+        )
 
-    #換算工時
-    df_attendance['ClockInTime_calc'] = pd.to_datetime(df_attendance['ClockInTime'])
-    df_attendance['ClockOutTime_calc'] = pd.to_datetime(df_attendance['ClockOutTime'])
-    df_attendance['WorkHours'] = round((df_attendance['ClockOutTime_calc'] - df_attendance['ClockInTime_calc']).dt.total_seconds() / 3600,4)
+        #換算工時
+        df_attendance['ClockInTime_calc'] = pd.to_datetime(df_attendance['ClockInTime'])
+        df_attendance['ClockOutTime_calc'] = pd.to_datetime(df_attendance['ClockOutTime'])
+        df_attendance['WorkHours'] = round((df_attendance['ClockOutTime_calc'] - df_attendance['ClockInTime_calc']).dt.total_seconds() / 3600,4)
 
-    df_attendance['WorkHours'] = df_attendance['WorkHours'].apply(format_hours_minutes)
+        df_attendance['WorkHours'] = df_attendance['WorkHours'].apply(format_hours_minutes)
 
-    st.dataframe(df_attendance,hide_index=True,column_config={
-        "UserID":None,
-        "AttendanceID":None,
-        "CaseID":st.column_config.TextColumn("案件",),
-        "ClockInTime":st.column_config.TextColumn("上班時間"),
-        "ClockOutTime":st.column_config.TextColumn("下班時間"),
-        "ClockInPhoto": st.column_config.ImageColumn("上班照片",width="small"),
-        "ClockOutPhoto": st.column_config.ImageColumn("下班照片",width="small"),
-        "IsTrained":"是否訓練",
-        "ClockInTime_calc":None,
-        "ClockOutTime_calc":None,
-        "WorkHours":st.column_config.TextColumn("工時")
-    })
+        st.dataframe(df_attendance,hide_index=True,column_config={
+            "UserID":None,
+            "AttendanceID":None,
+            "CaseID":st.column_config.TextColumn("案件",),
+            "ClockInTime":st.column_config.TextColumn("上班時間"),
+            "ClockOutTime":st.column_config.TextColumn("下班時間"),
+            "ClockInPhoto": st.column_config.ImageColumn("上班照片",width="small"),
+            "ClockOutPhoto": st.column_config.ImageColumn("下班照片",width="small"),
+            "IsTrained":"是否訓練",
+            "ClockInTime_calc":None,
+            "ClockOutTime_calc":None,
+            "WorkHours":st.column_config.TextColumn("工時")
+        })
 
     # if len(df_attendance)==0:
     #     st.warning("目前查無打卡資料。")
