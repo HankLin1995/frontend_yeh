@@ -4,7 +4,7 @@ import requests
 import os
 from api import create_user, get_user
 
-VERSION_NUMBER = "V2.4.0"
+VERSION_NUMBER = "V2.4.1"
 
 st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon=":derelict_house_building:", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")
@@ -18,6 +18,8 @@ if test_mode==True:
         st.session_state.logged_in = True
     if "user_role" not in st.session_state:
         st.session_state.user_role = "admin"
+    if "user_id" not in st.session_state:
+        st.session_state.user_id = "U24cb67e29a1721699612f40c853421a9"
 else:
     # Check if the user is logged in
     if "logged_in" not in st.session_state:

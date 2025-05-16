@@ -304,7 +304,7 @@ def create_clock_out(attendance_id,data):
     return resp.json()
 
 def get_attendance_by_user_id(user_id):
-    resp = requests.get(f"{BASE_URL}/attendance/query?UserID={user_id}")
+    resp = requests.get(f"{BASE_URL}/attendance/query?user_id={user_id}")
     resp.raise_for_status()
     return resp.json()
 
