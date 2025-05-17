@@ -15,6 +15,7 @@ from api import (
     get_worklogs_by_user_id,
     get_case_by_id
 )
+from PIL import Image
 
 if "safety_check_result" not in st.session_state:
     st.session_state.safety_check_result = False
@@ -276,8 +277,32 @@ def attendance_page():
 
 
 def material_page():
-    st.title("材料借用歸還")
-    st.write("這是材料借用歸還頁面")
+    # st.title("材料借用歸還")
+    # st.write("這是材料借用歸還頁面")
+
+    file=st.camera_input("📸 拍照掃描QR碼")
+    # file=st.file_uploader("上傳QR碼圖片",type="png")
+    if file is not None:
+        st.image(file)
+        
+    from utils_qrcode import process_image
+    
+    if file is not None:
+        
+        results, gray, binary = process_image(Image.open(file))
+        
+        if results:
+            for i, result in enumerate(results, 1):
+                st.success(f"成功掃描 QR 碼 #{i}:")
+                for key, value in result.items():
+                    st.write(f"**{key}:** {value}")
+                st.write("---")
+                num=st.number_input("數量",min_value=1,value=1)
+                
+                if st.button("借用",type="primary",use_container_width=True):
+                    st.toast("借用成功")
+        else:
+            st.warning("未檢測到QR碼，請調整相機角度和距離")
     # 這裡可以添加材料借用歸還的相關功能
 
 def equipment_page():

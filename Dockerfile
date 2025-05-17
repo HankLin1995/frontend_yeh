@@ -10,6 +10,9 @@ COPY requirements.txt ./
 # Install the required Python packages
 RUN pip install --no-cache-dir -r requirements.txt
 
+# 對於 Debian/Ubuntu 基礎映像
+RUN apt-get update && apt-get install -y libzbar0
+
 # Copy the rest of the application code into the container
 COPY . .
 

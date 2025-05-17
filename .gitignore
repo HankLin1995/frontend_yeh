@@ -40,3 +40,6 @@ htmlcov/
 
 # Windows
 Thumbs.db
+
+static/qrcode_materials
+static/qrcode_equipments

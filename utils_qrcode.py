@@ -2,9 +2,11 @@ import os
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 import cv2
-import pyzbar.pyzbar as pyzbar
+# import pyzbar.pyzbar as pyzbar
+from pyzbar.pyzbar import decode
 import warnings
 import ctypes
+import numpy as np
 
 def verify_qr_code(image_path, expected_data):
     """驗證QR碼的輔助函數"""
@@ -187,3 +189,74 @@ def merge_images_to_pdf(image_dir, output_pdf, items_per_page=4):
         print(f"PDF文件已保存至: {output_pdf}")
     else:
         print("沒有生成PDF頁面")
+
+def parse_qr_data(data):
+    """解析QR碼數據"""
+    try:
+        # 將bytes轉換為字符串
+        text = data.decode('utf-8')
+        # 如果包含分隔符，解析為結構化數據
+        if '|' in text:
+            fields = {}
+            for item in text.split('|'):
+                if ':' in item:
+                    key, value = item.split(':', 1)
+                    fields[key] = value
+            return fields
+        return {"內容": text}
+    except Exception as e:
+        return {"錯誤": str(e)}
+
+def process_image(image):
+    try:
+        # 將PIL圖像轉換為OpenCV格式
+        if isinstance(image, Image.Image):
+            # 轉換為RGB格式
+            image = image.convert('RGB')
+            # 將PIL圖像轉換為numpy數組
+            image = np.array(image)
+            # 轉換為BGR格式（OpenCV使用BGR）
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        
+        # 嘗試提高圖片質量
+        # 調整大小
+        height, width = image.shape[:2]
+        if width > 1000:
+            scale = 1000 / width
+            image = cv2.resize(image, (1000, int(height * scale)))
+        
+        # 轉換為灰度圖
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # 應用自適應閾值
+        binary = cv2.adaptiveThreshold(
+            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+            cv2.THRESH_BINARY, 11, 2
+        )
+        
+        # 嘗試多種方式解碼
+        results = []
+        # 1. 使用原始圖片
+        decoded_objects = decode(image)
+        results.extend([obj for obj in decoded_objects])
+        
+        # 2. 使用灰度圖
+        if not results:
+            decoded_objects = decode(gray)
+            results.extend([obj for obj in decoded_objects])
+        
+        # 3. 使用二值化圖片
+        if not results:
+            decoded_objects = decode(binary)
+            results.extend([obj for obj in decoded_objects])
+        
+        # 處理結果
+        parsed_results = []
+        for obj in results:
+            parsed_results.append(parse_qr_data(obj.data))
+        
+        return parsed_results, gray, binary
+        
+    except Exception as e:
+        # st.error(f"處理圖片時發生錯誤: {str(e)}")
+        return [], None, None
