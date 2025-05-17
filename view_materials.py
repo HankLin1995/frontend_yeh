@@ -71,6 +71,15 @@ def display_materials(df):
             st.cache_data.clear()
             st.rerun()
 
+        if st.button("🖨️ 輸出QRCODE"):
+            from utils_qrcode import generate_qrcode
+            #qr_data = f"編碼:{code}|品名:{name}|規格:{spec}|單位:{unit}"
+            for _,row in filtered_df.iterrows():
+
+                generate_qrcode(row["MaterialID"], row["Name"], row["Content"], row["Unit"], "./static/qrcode_materials")
+
+            st.toast("QRCODE輸出成功！")
+
 
 def example_download():
     material_example = pd.DataFrame([
@@ -150,5 +159,7 @@ with st.sidebar:
     if st.button("🗂️ 匯入材料"):
         import_materials()
 
-    if st.button("🖨️ 輸出QRCODE"):
-        st.toast("輸出QRCODE開發中...", icon="⚠️")
+    if st.button("🖨️ 全部QRCODE列印"):
+        from utils_qrcode import merge_images_to_pdf
+        merge_images_to_pdf("./static/qrcode_materials", "./static/qrcode_materials.pdf")
+        st.toast("QRCODE列印PDF成功！")

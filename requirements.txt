@@ -2,4 +2,7 @@ streamlit
 requests
 dotenv
 openpyxl
+qrcode
+pyzbar
+opencv-python-headless
 

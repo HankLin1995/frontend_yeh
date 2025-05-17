@@ -73,6 +73,15 @@ def display_equipments(df):
             st.success("機具刪除成功！")
             st.cache_data.clear()
             st.rerun()
+        
+        if st.button("🖨️ 輸出QRCODE"):
+            from utils_qrcode import generate_qrcode
+            #qr_data = f"編碼:{code}|品名:{name}|規格:{spec}|單位:{unit}"
+            for _,row in filtered_df.iterrows():
+
+                generate_qrcode(row["EquipmentID"], row["Name"],row["Value"], row["Unit"], "./static/qrcode_equipments")
+
+            st.toast("QRCODE輸出成功！")
 
 def example_download():
     equipment_example = pd.DataFrame([
@@ -154,5 +163,7 @@ with st.sidebar:
     if st.button("🗂️ 匯入機具"):
         import_equipments()
 
-    if st.button("🖨️ 輸出QRCODE"):
-        st.toast("輸出QRCODE開發中...", icon="⚠️")
+    if st.button("🖨️ 全部QRCODE列印"):
+        from utils_qrcode import merge_images_to_pdf
+        merge_images_to_pdf("./static/qrcode_equipments", "./static/qrcode_equipments.pdf")
+        st.toast("QRCODE列印PDF成功！")
