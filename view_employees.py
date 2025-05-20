@@ -374,8 +374,8 @@ with tab4:
         df_attendance['CaseID']=df_attendance['CaseID'].apply(lambda x: df_cases[df_cases['CaseID']==x]['Name'].values[0])
 
         #照片用image顯示
-        df_attendance['ClockInPhoto']=df_attendance['ClockInPhoto'].apply(lambda x: BASE_URL + "/" + x.split("/")[-1])  # 只取檔名部分)
-        df_attendance['ClockOutPhoto']=df_attendance['ClockOutPhoto'].apply(lambda x: BASE_URL + "/" + x.split("/")[-1])  # 只取檔名部分)
+        df_attendance['ClockInPhoto']=df_attendance['ClockInPhoto'].apply(lambda x: BASE_URL + "/StaticPhotos/" + x.split("/")[-1])  # 只取檔名部分)
+        df_attendance['ClockOutPhoto']=df_attendance['ClockOutPhoto'].apply(lambda x: BASE_URL + "/StaticPhotos/" + x.split("/")[-1])  # 只取檔名部分)
         
         import datetime
 
