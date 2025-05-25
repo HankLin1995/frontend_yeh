@@ -4,8 +4,69 @@ import io
 import plotly.express as px
 from api import (
     get_materials,
-    create_material
+    create_material,
+    update_material,
+    get_material
 )
+
+@st.dialog("✏️ 編輯材料")
+def edit_material(material_id):
+    
+    # 取得材料詳細資料
+    material = get_material(material_id)
+    if not material:
+        st.error("找不到指定的材料")
+        return None
+    
+    with st.form(f"edit_material_{material_id}"):
+        # 顯示不可編輯的欄位
+        # st.text_input("材料編號", value=material_id, disabled=True)
+        name = st.text_input('材料名稱', value=material.get('Name', ''))
+        unit = st.text_input('單位', value=material.get('Unit', ''))
+        unit_price = st.number_input(
+            '單價', 
+            min_value=0.0, 
+            value=float(material.get('UnitPrice', 0)), 
+            step=1.0
+        )
+        content = st.text_area('說明', value=material.get('Content', ''))
+        stock_quantity = st.number_input(
+            '庫存量', 
+            min_value=0, 
+            value=int(material.get('StockQuantity', 0))
+        )
+        safety_stock = st.number_input(
+            '安全庫存', 
+            min_value=0, 
+            value=int(material.get('SafetyStock', 0))
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            submitted = st.form_submit_button('儲存變更', use_container_width=True)
+        with col2:
+            if st.form_submit_button('取消', type='secondary', use_container_width=True):
+                return None
+                
+        if submitted:
+            update_data = {
+                'Name': name,
+                'Unit': unit,
+                'UnitPrice': unit_price,
+                'Content': content,
+                'StockQuantity': stock_quantity,
+                'SafetyStock': safety_stock
+            }
+            try:
+                result = update_material(material_id, update_data)
+                st.success("材料更新成功！")
+                st.rerun()
+                return result
+            except Exception as e:
+                st.error(f"更新失敗：{e}")
+    return None
+    
+    
 
 @st.dialog("➕ 新增材料")
 def material_form(material=None, mode='create'):
@@ -61,25 +122,34 @@ def display_materials(df):
     if filtered_df.empty:
         pass
     else:
-        if st.button("🗑️ 刪除材料"):
-            from api import delete_material
-            for _, row in filtered_df.iterrows():
-                try:
-                    delete_material(row["MaterialID"])
-                except Exception as e:
-                    st.error(f"刪除失敗：{e}")
-            st.success("材料刪除成功！")
-            st.cache_data.clear()
-            st.rerun()
 
-        if st.button("🖨️ 輸出QRCODE"):
-            from utils_qrcode import generate_qrcode
-            #qr_data = f"編碼:{code}|品名:{name}|規格:{spec}|單位:{unit}"
-            for _,row in filtered_df.iterrows():
+        col1,col2,col3=st.columns(3)
 
-                generate_qrcode(row["MaterialID"], row["Name"], row["Content"], row["Unit"], "./static/qrcode_materials")
+        with col1:
+            if st.button("✏️ 編輯材料",use_container_width=True):
+                edit_material(filtered_df.iloc[0]["MaterialID"])
 
-            st.toast("QRCODE輸出成功！")
+        with col2:
+            if st.button("🗑️ 刪除材料",use_container_width=True):
+                from api import delete_material
+                for _, row in filtered_df.iterrows():
+                    try:
+                        delete_material(row["MaterialID"])
+                    except Exception as e:
+                        st.error(f"刪除失敗：{e}")
+                st.success("材料刪除成功！")
+                st.cache_data.clear()
+                st.rerun()
+
+        with col3:
+            if st.button("🖨️ 輸出QRCODE",use_container_width=True):
+                from utils_qrcode import generate_qrcode
+                #qr_data = f"編碼:{code}|品名:{name}|規格:{spec}|單位:{unit}"
+                for _,row in filtered_df.iterrows():
+
+                    generate_qrcode(row["MaterialID"], row["Name"], row["Content"], row["Unit"], "./static/qrcode_materials")
+
+                st.toast("QRCODE輸出成功！")
 
 
 def example_download():

@@ -223,6 +223,11 @@ def delete_material(material_id):
     resp.raise_for_status()
     return resp.json()
 
+def get_material(material_id):
+    resp = requests.get(f"{BASE_URL}/materials/{material_id}")
+    resp.raise_for_status()
+    return resp.json()
+
 # ====== 設備管理 ======
 
 def get_equipments(skip=0, limit=1000, name=None, status=None):
