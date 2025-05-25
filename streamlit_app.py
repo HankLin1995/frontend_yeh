@@ -4,7 +4,7 @@ import requests
 import os
 from api import create_user, get_user
 
-VERSION_NUMBER = "V2.4.4"
+VERSION_NUMBER = "V2.4.5"
 
 st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon=":derelict_house_building:", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")
@@ -12,7 +12,13 @@ st.logo("./static/BANNER-removebg-preview.png")
 os.makedirs("./static/qrcode_materials", exist_ok=True)
 os.makedirs("./static/qrcode_equipments", exist_ok=True)
 
-test_mode=False
+from dotenv import load_dotenv
+load_dotenv()
+
+if os.getenv("TEST_MODE") == "True":
+    test_mode = True
+else:
+    test_mode = False
 
 if test_mode==True:
 

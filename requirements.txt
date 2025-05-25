@@ -5,4 +5,5 @@ openpyxl
 qrcode
 pyzbar
 opencv-python-headless
+plotly
 

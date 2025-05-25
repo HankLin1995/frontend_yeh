@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import io
+import plotly.express as px
 from api import (
     get_materials,
     create_material
@@ -139,27 +140,139 @@ def import_materials():
 materials = get_materials()
 df_materials = pd.DataFrame(materials)
 
-st.markdown("### 🧱 材料清單")
+tab1,tab2=st.tabs(["材料清單","材料報表"])
 
-if df_materials.empty:
-    st.write("目前沒有材料資料")
-else:
-    display_materials(df_materials)
+with tab1:
 
-st.markdown("---")
+    st.markdown("### 🧱 材料清單")
 
-if st.button("➕ 新增材料"):
-    material_form()
+    if df_materials.empty:
+        st.write("目前沒有材料資料")
+    else:
+        display_materials(df_materials)
 
-with st.sidebar:
+    st.markdown("---")
 
-    st.markdown("#### 材料匯入/範例下載")
-    example_download()
+    if st.button("➕ 新增材料"):
+        material_form()
 
-    if st.button("🗂️ 匯入材料"):
-        import_materials()
+    with st.sidebar:
 
-    if st.button("🖨️ 全部QRCODE列印"):
-        from utils_qrcode import merge_images_to_pdf
-        merge_images_to_pdf("./static/qrcode_materials", "./static/qrcode_materials.pdf")
-        st.toast("QRCODE列印PDF成功！")
+        st.markdown("#### 材料匯入/範例下載")
+        example_download()
+
+        if st.button("🗂️ 匯入材料"):
+            import_materials()
+
+        if st.button("🖨️ 全部QRCODE列印"):
+            from utils_qrcode import merge_images_to_pdf
+            merge_images_to_pdf("./static/qrcode_materials", "./static/qrcode_materials.pdf")
+            st.toast("QRCODE列印PDF成功！")
+
+with tab2:
+    st.markdown("### 📊 材料庫存管理報表")
+    
+    if df_materials.empty:
+        st.warning("目前沒有材料資料可供分析")
+        st.stop()
+    
+    # 計算缺口數量
+    df_materials['缺口數量'] = df_materials['SafetyStock'] - df_materials['StockQuantity']
+    df_materials['缺口數量'] = df_materials['缺口數量'].apply(lambda x: max(x, 0))  # 確保缺口不為負數
+    
+    # 計算庫存狀態
+    df_materials['庫存狀態'] = '充足'  # 綠色
+    df_materials.loc[df_materials['StockQuantity'] < df_materials['SafetyStock'] * 1.5, '庫存狀態'] = '接近警戒'  # 黃色
+    df_materials.loc[df_materials['StockQuantity'] <= df_materials['SafetyStock'], '庫存狀態'] = '不足'  # 紅色
+    
+    # 計算庫存安全比率 (當前庫存 / 安全庫存)
+    df_materials['安全比率'] = df_materials['StockQuantity'] / df_materials['SafetyStock']
+    
+    # 計算預計缺口天數（假設每天消耗量為安全庫存的5%）
+    daily_consumption_rate = 0.05  # 每天消耗安全庫存的5%
+    df_materials['預計缺口天數'] = ((df_materials['StockQuantity'] - df_materials['SafetyStock']) / 
+                              (df_materials['SafetyStock'] * daily_consumption_rate)).round().astype(int)
+    df_materials['預計缺口天數'] = df_materials['預計缺口天數'].apply(lambda x: max(x, 0))  # 確保不為負數
+
+    # 計算各狀態數量
+    status_counts = df_materials['庫存狀態'].value_counts()
+    total_materials = len(df_materials)
+    shortage_count = status_counts.get('不足', 0)
+    warning_count = status_counts.get('接近警戒', 0)
+    safe_count = status_counts.get('充足', 0)
+    
+    col1, col2, col3 = st.columns(3, border=True)
+
+    with col1:
+        st.metric(
+            "🔴 庫存不足", 
+            f"{shortage_count} ",
+            delta_color="inverse",
+            help="庫存已低於或等於安全庫存"
+        )
+    with col2:
+        st.metric(
+            "🟡 接近警戒", 
+            f"{warning_count} ",
+            delta_color="inverse",
+            help="庫存低於安全庫存的1.5倍"
+        )
+    with col3:
+        st.metric(
+            "🟢 庫存充足", 
+            f"{safe_count} ",
+            help="庫存充足，超過安全庫存的1.5倍"
+        )
+    
+    with st.container(border=True):
+        st.markdown("### 庫存安全比率")
+
+        # 依安全比率由低到高排序
+        df_materials.sort_values(by='安全比率', ascending=True, inplace=True)
+
+        # 使用 plotly 繪製條狀圖
+        fig_bar = px.bar(
+            df_materials,
+            x='Name',
+            y='安全比率',
+            color='庫存狀態',  # 自動依據庫存狀態分色
+            color_discrete_map={
+                '不足': 'red',
+                '接近警戒': 'orange',
+                '充足': 'green'
+            },
+            # title='材料庫存安全比率',
+            labels={'安全比率': '安全比率', 'Name': '材料名稱'}
+        )
+
+        # 圖表樣式微調
+        fig_bar.update_layout(
+            xaxis_title='材料名稱',
+            yaxis_title='安全比率',
+            xaxis_tickangle=-45,
+            height=400
+        )
+
+        # 顯示圖表
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    with st.container(border=True):
+        #顯示不足或接近警戒的材料清單
+        st.markdown("### 警示材料清單")
+        df_shortage = df_materials[df_materials['庫存狀態'].isin(['不足', '接近警戒'])]
+        st.dataframe(df_shortage,
+        column_config={
+            "Name": "材料名稱",
+            "Unit": "單位",
+            "UnitPrice": "單價",
+            "Content": "說明",
+            "StockQuantity": "庫存量",  
+            "SafetyStock": "安全庫存",
+            "MaterialID": None,
+            "CreateTime":None,
+            "缺口數量": "缺口數量",
+            "庫存狀態": "庫存狀態",
+            "安全比率": None,
+            "預計缺口天數":None
+        },hide_index=True)
+        
