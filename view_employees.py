@@ -426,8 +426,13 @@ with tab4:
 
     df_cases=pd.DataFrame(get_cases())
 
+    from utils_calendar import create_calendar_visualization
+    fig = create_calendar_visualization(2025, 5, [5, 10, 15, 20, 25])
+    st.plotly_chart(fig)
+
     if df_attendance.empty:
-        st.warning("目前查無打卡資料。")
+        # st.warning("目前查無打卡資料。")
+        pass
     else:
 
         df_attendance['CaseID']=df_attendance['CaseID'].apply(lambda x: df_cases[df_cases['CaseID']==x]['Name'].values[0])
