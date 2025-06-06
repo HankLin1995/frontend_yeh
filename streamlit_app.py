@@ -4,7 +4,7 @@ import requests
 import os
 from api import create_user, get_user
 
-VERSION_NUMBER = "V2.4.6"
+VERSION_NUMBER = "V2.5.0"
 
 st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon=":derelict_house_building:", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")
@@ -153,15 +153,15 @@ else:
 
     # PAGES
 
-    user_page=st.Page("view_users.py",title="登入管理",icon=":material/account_circle:")
-    group_page=st.Page("view_groups.py",title="群組管理",icon=":material/account_circle:")
-    case_page=st.Page("view_cases.py",title="案件管理",icon=":material/account_circle:")
-    photo_page=st.Page("view_photos.py",title="照片管理",icon=":material/camera_alt:")
-    photo_readonly_page=st.Page("view_photos_readonly.py",title="照片瀏覽",icon=":material/camera_alt:")
-    employee_page=st.Page("view_employees.py",title="員工資料✨",icon=":material/account_circle:")
-    equipment_page=st.Page("view_equipment.py",title="機具管理✨",icon=":material/account_circle:")
-    material_page=st.Page("view_materials.py",title="材料管理✨",icon=":material/account_circle:")
-    mobile_page=st.Page("view_mobile.py",title="勤務回報✨",icon=":material/account_circle:",default=True)
+    user_page = st.Page("view_users.py", title="登入清單", icon=":material/manage_accounts:")
+    group_page = st.Page("view_groups.py", title="群組清單", icon=":material/groups:")
+    case_page = st.Page("view_cases.py", title="案件管理", icon=":material/assignment:")
+    photo_page = st.Page("view_photos.py", title="照片列表", icon=":material/photo_library:")
+    photo_readonly_page = st.Page("view_photos_readonly.py", title="照片瀏覽", icon=":material/image_search:")
+    employee_page = st.Page("view_employees.py", title="員工資料", icon=":material/badge:")
+    equipment_page = st.Page("view_equipment.py", title="機具管理", icon=":material/construction:")
+    material_page = st.Page("view_materials.py", title="材料管理", icon=":material/inventory_2:")
+    mobile_page = st.Page("view_mobile.py", title="勤務回報", icon=":material/assignment_turned_in:", default=True)
 
 
     # NAVIGATION
@@ -170,10 +170,11 @@ else:
 
         pg=st.navigation(
             {
-                "設定":[user_page,group_page,case_page,equipment_page,material_page],
+                "設定":[user_page,group_page],
+                "專案":[case_page,photo_page,photo_readonly_page],
                 "人事":[employee_page],
-                "施工":[photo_page,photo_readonly_page],
-                "勤務回報":[mobile_page]
+                "物料":[material_page,equipment_page],
+                "其他":[mobile_page]
             }
         )
 
@@ -183,9 +184,9 @@ else:
 
         pg=st.navigation(
             {
-                "基本設定":[group_page,case_page],
-                "工作內容":[photo_page],
-                "勤務回報":[mobile_page]
+                "設定":[group_page,case_page],
+                "專案":[photo_page],
+                "其他":[mobile_page]
             }
         ) 
 
@@ -195,8 +196,8 @@ else:
 
         pg=st.navigation(
             {
-                "工作內容":[photo_readonly_page],
-                "勤務回報":[mobile_page]
+                "專案":[photo_readonly_page],
+                "其他":[mobile_page]
             }
         )
 
