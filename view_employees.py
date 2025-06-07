@@ -2,6 +2,51 @@ import streamlit as st
 import pandas as pd
 import datetime
 import re
+from utils_calendar import create_calendar_visualization
+
+def get_marked_dates(df):
+    """
+    從考勤數據中提取日期和工時資訊
+    
+    Args:
+        df: 包含考勤記錄的 DataFrame
+    
+    Returns:
+        dict: 日期作為鍵，工時作為值的字典 {日期數字: 工時小時數}
+    """
+    marked_dates = {}
+    
+    # 確保數據框不為空
+    if not df.empty:
+        # 遍歷每一行考勤記錄
+        for _, row in df.iterrows():
+            # 獲取日期數字 (日期的天數)
+            date_num = row['ClockInTime_calc'].day
+            
+            # 獲取工時 (如果是字符串格式如 '8小時30分鐘'，需要轉換為小時數)
+            if isinstance(row['WorkHours'], str) and '小時' in row['WorkHours']:
+                # 解析字符串格式的工時
+                hours_match = re.search(r'(\d+)小時', row['WorkHours'])
+                minutes_match = re.search(r'(\d+)分鐘', row['WorkHours'])
+                
+                hours = int(hours_match.group(1)) if hours_match else 0
+                minutes = int(minutes_match.group(1)) if minutes_match else 0
+                
+                work_hours = hours + minutes / 60
+            elif isinstance(row['WorkHours'], (int, float)):
+                # 如果已經是數字格式
+                work_hours = row['WorkHours']
+            else:
+                # 默認值
+                work_hours = 0
+            
+            # 將工時添加到對應日期
+            if date_num in marked_dates:
+                marked_dates[date_num] += work_hours
+            else:
+                marked_dates[date_num] = work_hours
+    
+    return marked_dates
 
 from api import (
     BASE_URL,
@@ -426,13 +471,8 @@ with tab4:
 
     df_cases=pd.DataFrame(get_cases())
 
-    from utils_calendar import create_calendar_visualization
-    fig = create_calendar_visualization(2025, 5, [5, 10, 15, 20, 25])
-    st.plotly_chart(fig)
-
     if df_attendance.empty:
-        # st.warning("目前查無打卡資料。")
-        pass
+        st.warning("目前查無打卡資料。")
     else:
 
         df_attendance['CaseID']=df_attendance['CaseID'].apply(lambda x: df_cases[df_cases['CaseID']==x]['Name'].values[0])
@@ -470,25 +510,44 @@ with tab4:
         df_attendance['WorkHours'] = df_attendance['WorkHours'].apply(format_hours_minutes)
 
 
-        with st.sidebar:
-            #filter with month
+        # with st.sidebar:
+        #     #filter with month
+        #     month=st.selectbox("月份",options=df_attendance['ClockInTime_calc'].dt.month.unique())
+        #     df_attendance=df_attendance[df_attendance['ClockInTime_calc'].dt.month==month]
+
+        col1,col2,col3=st.columns([1,1,1])
+
+        with col1:
+            show_type=st.selectbox("顯示方式",options=["日曆","表格"])
+
+        with col2:
+            year=st.selectbox("年份",options=df_attendance['ClockInTime_calc'].dt.year.unique())
+
+        with col3:
             month=st.selectbox("月份",options=df_attendance['ClockInTime_calc'].dt.month.unique())
-            df_attendance=df_attendance[df_attendance['ClockInTime_calc'].dt.month==month]
+            df_attendance=df_attendance[(df_attendance['ClockInTime_calc'].dt.year==year)&(df_attendance['ClockInTime_calc'].dt.month==month)]
 
+        if show_type=="日曆":
 
-        st.dataframe(df_attendance,hide_index=True,column_config={
-            "UserID":None,
-            "AttendanceID":None,
-            "CaseID":st.column_config.TextColumn("案件",),
-            "ClockInTime":st.column_config.TextColumn("上班時間"),
-            "ClockOutTime":st.column_config.TextColumn("下班時間"),
-            "ClockInPhoto": st.column_config.ImageColumn("上班照片",width="small"),
-            "ClockOutPhoto": st.column_config.ImageColumn("下班照片",width="small"),
-            "IsTrained":"是否訓練",
-            "ClockInTime_calc":None,
-            "ClockOutTime_calc":None,
-            "WorkHours":st.column_config.TextColumn("工時")
-        })
+            marked_dates=get_marked_dates(df_attendance)
+            fig = create_calendar_visualization(year, month, marked_dates)
+            st.plotly_chart(fig)
+
+        else:
+
+            st.dataframe(df_attendance,hide_index=True,column_config={
+                "UserID":None,
+                "AttendanceID":None,
+                "CaseID":st.column_config.TextColumn("案件",),
+                "ClockInTime":st.column_config.TextColumn("上班時間"),
+                "ClockOutTime":st.column_config.TextColumn("下班時間"),
+                "ClockInPhoto": st.column_config.ImageColumn("上班照片",width="small"),
+                "ClockOutPhoto": st.column_config.ImageColumn("下班照片",width="small"),
+                "IsTrained":"是否訓練",
+                "ClockInTime_calc":None,
+                "ClockOutTime_calc":None,
+                "WorkHours":st.column_config.TextColumn("工時")
+            })
 
         # 薪資單功能
         if st.button("列印薪資單", type="primary"):

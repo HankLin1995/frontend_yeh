@@ -120,16 +120,28 @@ def create_calendar_visualization(year, month, markedDates):
       
       # 如果這個日期需要標記紅點(事件)
       if dateNum in markedDates:
-        # 使用更時尚的小點設計
-        fig.add_shape(
-          type="circle",
-          x0=x0 + 0.5 - 0.08, 
-          y0=y0 - 0.8 - 0.08,
-          x1=x0 + 0.5 + 0.08, 
-          y1=y0 - 0.8 + 0.08,
-          line=dict(color=eventColor, width=1),
-          fillcolor=eventColor,
-        )
+
+        # fig.add_shape(
+        #   type="circle",
+        #   x0=x0 + 0.5 - 0.08, 
+        #   y0=y0 - 0.8 - 0.08,
+        #   x1=x0 + 0.5 + 0.08, 
+        #   y1=y0 - 0.8 + 0.08,
+        #   line=dict(color=eventColor, width=1),
+        #   fillcolor=eventColor,
+        # )
+
+        add_hours=markedDates[dateNum]
+
+        if add_hours>0:
+
+          fig.add_annotation(
+            x=x0+0.5,
+            y=y0-0.8-0.02 ,
+            text=f"+{add_hours:.1f}".rstrip('0').rstrip('.'),
+            showarrow=False,
+            font=dict(size=16, color="red", family="Arial")
+          )
     
   # 添加星期幾的標籤
   for i, day in enumerate(weekdays):

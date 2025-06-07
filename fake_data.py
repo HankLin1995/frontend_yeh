@@ -62,22 +62,6 @@ cases = [
     "Location": "台北市信義區松仁路100號",
     "Content": "15層住宅新建，含地下3層停車場",
     "Status": "進行中"
-  },
-  {
-    "CaseID": "C002",
-    "Name": "新北市板橋區辦公大樓整修工程",
-    "GroupID": "G001",
-    "Location": "新北市板橋區民生路50號",
-    "Content": "8層辦公大樓外牆及內部整修",
-    "Status": "進行中"
-  },
-  {
-    "CaseID": "C003",
-    "Name": "桃園市中壢區商場擴建工程",
-    "GroupID": "G002",
-    "Location": "桃園市中壢區中央西路二段120號",
-    "Content": "既有商場擴建及內部裝修",
-    "Status": "規劃中"
   }
 ]
 
@@ -154,10 +138,7 @@ def generate_attendance_data(num_records=50):
         "AttendanceID": str(uuid.uuid4()),
         "UserID": user["UserID"],
         "UserName": user["UserName"],
-        "CaseID": case["CaseID"],
-        "CaseName": case["Name"],
-        "ClockInTime": clock_in_time.isoformat(),
-        "ClockOutTime": clock_out_time.isoformat(),
+        "CaseID": 1,
         "ClockInPhoto": generate_fake_photo(),
         "ClockOutPhoto": generate_fake_photo(),
         "IsTrained": True,
