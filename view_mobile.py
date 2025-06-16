@@ -13,7 +13,8 @@ from api import (
     create_worklog,
     update_worklog,
     get_worklogs_by_user_id,
-    get_case_by_id
+    get_case_by_id,
+    create_material_borrow_log
 )
 from PIL import Image
 
@@ -280,10 +281,15 @@ def material_page():
     # st.title("材料借用歸還")
     # st.write("這是材料借用歸還頁面")
 
-    file=st.camera_input("📸 拍照掃描QR碼")
+    cases=get_cases()
+
+    case_options={case["CaseID"]:case["Name"] for case in cases}
+    selected_case_id=st.selectbox("負責案件",options=list(case_options.keys()),format_func=lambda x: case_options.get(x,x))
+
+    file=st.camera_input("📸 拍照掃描QR碼",key="material_camera")
     # file=st.file_uploader("上傳QR碼圖片",type="png")
-    if file is not None:
-        st.image(file)
+    # if file is not None:
+    #     st.image(file)
         
     from utils_qrcode import process_image
     
@@ -293,17 +299,31 @@ def material_page():
         
         if results:
             for i, result in enumerate(results, 1):
-                st.success(f"成功掃描 QR 碼 #{i}:")
+                st.success(f"成功掃描 QR 碼:")
                 for key, value in result.items():
                     st.write(f"**{key}:** {value}")
+                    if key=="編碼":
+                        material_id=value
+
                 st.write("---")
                 num=st.number_input("數量",min_value=1,value=1)
                 
                 if st.button("借用",type="primary",use_container_width=True):
-                    st.toast("借用成功")
+                    data={
+                        "UserID":st.session_state.user_id,
+                        "CaseID":selected_case_id,
+                        "MaterialID":material_id,
+                        "Quantity":num,
+                        "Status":"出庫"
+                    }
+                    res=create_material_borrow_log(data)
+                    if "LogID" in res:
+                        st.success("借用成功")
+
         else:
             st.warning("未檢測到QR碼，請調整相機角度和距離")
     # 這裡可以添加材料借用歸還的相關功能
+
 
 def equipment_page():
     st.title("設備借用歸還")

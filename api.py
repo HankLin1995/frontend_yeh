@@ -228,6 +228,16 @@ def get_material(material_id):
     resp.raise_for_status()
     return resp.json()
 
+def create_material_borrow_log(data):
+    resp = requests.post(f"{BASE_URL}/materials/inventory", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+def get_material_borrow_logs(user_id):
+    resp = requests.get(f"{BASE_URL}/materials/inventory/user/{user_id}")
+    resp.raise_for_status()
+    return resp.json()
+
 # ====== 設備管理 ======
 
 def get_equipments(skip=0, limit=1000, name=None, status=None):

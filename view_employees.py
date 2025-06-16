@@ -61,7 +61,8 @@ from api import (
     get_salaries,
     delete_salary,
     get_attendance_by_user_id,
-    get_cases
+    get_cases,
+    get_material_borrow_logs
 )
 
 def format_hours_minutes(hours_float):
@@ -428,7 +429,7 @@ st.markdown("")
 
 selected_user=get_active_employee()
 
-tab1, tab2, tab3, tab4 = st.tabs(["🧑‍💼基本資料", "🏅 證照", "💰 薪資","⏰ 打卡紀錄"])
+tab1, tab2, tab3, tab4,tab5 = st.tabs(["🧑‍💼基本資料", "🏅 證照", "💰 薪資","⏰ 打卡紀錄","🛠️ 材料紀錄"])
 
 with tab1:
     employee = get_employee_detail(selected_user['UserID'])
@@ -553,6 +554,24 @@ with tab4:
         if st.button("列印薪資單", type="primary"):
 
             get_salary_report(employee['id'],month)
+
+with tab5:
+    df_material_borrow_logs = get_material_borrow_logs(st.session_state.user_id)
+    # 若回傳為 list（通常為 list of dict），自動轉為 DataFrame，確保下方欄位索引語法正確
+    if isinstance(df_material_borrow_logs, list):
+      df_material_borrow_logs = pd.DataFrame(df_material_borrow_logs)
+
+    df = df_material_borrow_logs[["LogID", "case_name", "material_name", "Quantity", "Status", "CreateTime"]]
+
+    st.dataframe(df,hide_index=True,column_config={
+        "LogID":st.column_config.TextColumn("流水號"),
+        "case_name":st.column_config.TextColumn("案件"),
+        "material_name":st.column_config.TextColumn("材料"),
+        "Quantity":st.column_config.TextColumn("數量"),
+        "Status":st.column_config.TextColumn("狀態"),
+        "CreateTime":st.column_config.TextColumn("借出時間")
+    })
+
 
     # if len(df_attendance)==0:
     #     st.warning("目前查無打卡資料。")
