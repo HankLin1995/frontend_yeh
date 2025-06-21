@@ -142,14 +142,29 @@ def display_materials(df):
                 st.rerun()
 
         with col3:
-            if st.button("🖨️ 輸出QRCODE",use_container_width=True):
-                from utils_qrcode import generate_qrcode
-                #qr_data = f"編碼:{code}|品名:{name}|規格:{spec}|單位:{unit}"
-                for _,row in filtered_df.iterrows():
+            if st.button("🖨️ 輸出QRCODE", use_container_width=True):
+              from utils_qrcode import generate_qrcode, merge_images_to_pdf
+              # 逐筆產生QRCODE
+              for _, row in filtered_df.iterrows():
+                generate_qrcode(row["MaterialID"], row["Name"], row["Content"], row["Unit"], "./static/qrcode_materials")
+              # 合併所有QRCODE為PDF
+              merge_images_to_pdf("./static/qrcode_materials", "./static/qrcode_materials.pdf")
+              st.toast("QRCODE輸出成功！")
+              # 側邊欄顯示PDF下載連結
+              with st.sidebar:
+                with st.container(border=True):
+                  st.markdown("#### QRCODE PDF下載")
+                  try:
+                    with open("./static/qrcode_materials.pdf", "rb") as pdf_file:
+                      st.download_button(
+                        label="📄 下載QRCODE PDF",
+                        data=pdf_file,
+                        file_name="qrcode_materials.pdf",
+                        mime="application/pdf"
+                      )
+                  except Exception as e:
+                    st.warning(f"PDF檔案產生失敗: {e}")
 
-                    generate_qrcode(row["MaterialID"], row["Name"], row["Content"], row["Unit"], "./static/qrcode_materials")
-
-                st.toast("QRCODE輸出成功！")
 
 
 def example_download():
@@ -234,10 +249,10 @@ with tab1:
         if st.button("🗂️ 匯入材料"):
             import_materials()
 
-        if st.button("🖨️ 全部QRCODE列印"):
-            from utils_qrcode import merge_images_to_pdf
-            merge_images_to_pdf("./static/qrcode_materials", "./static/qrcode_materials.pdf")
-            st.toast("QRCODE列印PDF成功！")
+        # if st.button("🖨️ 全部QRCODE列印"):
+        #     from utils_qrcode import merge_images_to_pdf
+        #     merge_images_to_pdf("./static/qrcode_materials", "./static/qrcode_materials.pdf")
+        #     st.toast("QRCODE列印PDF成功！")
 
 with tab2:
     st.markdown("### 📊 材料庫存管理報表")
