@@ -338,6 +338,12 @@ def material_page():
             st.warning("未檢測到QR碼，請調整相機角度和距離")
             return
 
+        material=get_material_by_id(material_id)
+        if material is None:
+            st.warning("未找到該材料")
+            return
+        else:
+            st.write(material["Name"])
 
         if st.button("借用",type="primary",use_container_width=True):
             data={
