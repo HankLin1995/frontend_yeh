@@ -557,7 +557,7 @@ with tab4:
 
 with tab5:
     df_material_borrow_logs = get_material_borrow_logs(selected_user['UserID'])
-    
+    st.write(df_material_borrow_logs)
     if df_material_borrow_logs is None:
         st.warning("目前查無借領紀錄。")
     else:
