@@ -233,6 +233,11 @@ def create_material_borrow_log(data):
     resp.raise_for_status()
     return resp.json()
 
+def create_material_return_log(data):
+    resp = requests.post(f"{BASE_URL}/materials/inventory/return", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
 def get_material_borrow_logs(user_id):
     resp = requests.get(f"{BASE_URL}/materials/inventory/user/{user_id}")
     resp.raise_for_status()

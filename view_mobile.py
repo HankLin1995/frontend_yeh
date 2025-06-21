@@ -16,8 +16,11 @@ from api import (
     get_case_by_id,
     create_material_borrow_log,
     get_materials,
+    get_material_borrow_logs,
+    create_material_return_log,
 )
 from PIL import Image
+import pandas as pd
 
 
 if "safety_check_result" not in st.session_state:
@@ -320,30 +323,96 @@ def get_materail_id():
                         
 def material_page():
 
-    cases=get_cases()
+    with st.container(border=True):
+        
 
-    case_options={case["CaseID"]:case["Name"] for case in cases}
-    selected_case_id=st.selectbox("負責案件",options=list(case_options.keys()),format_func=lambda x: case_options.get(x,x))
+        cases=get_cases()
 
-    material_id=get_materail_id()
-    num=st.number_input("數量",min_value=1,value=1)
+        case_options={case["CaseID"]:case["Name"] for case in cases}
+        selected_case_id=st.selectbox("負責案件",options=list(case_options.keys()),format_func=lambda x: case_options.get(x,x))
 
-    if material_id is None:
-        st.warning("未檢測到QR碼，請調整相機角度和距離")
-        return
+        material_id=get_materail_id()
+        num=st.number_input("數量",min_value=1,value=1)
+
+        if material_id is None:
+            st.warning("未檢測到QR碼，請調整相機角度和距離")
+            return
 
 
-    if st.button("借用",type="primary",use_container_width=True):
-        data={
-            "UserID":st.session_state.user_id,
-            "CaseID":selected_case_id,
-            "MaterialID":material_id,
-            "Quantity_Out":num,
-            # "Status":"出庫"
-        }
-        res=create_material_borrow_log(data)
-        if "LogID" in res:
-            st.success("借用成功")
+        if st.button("借用",type="primary",use_container_width=True):
+            data={
+                "UserID":st.session_state.user_id,
+                "CaseID":selected_case_id,
+                "MaterialID":material_id,
+                "Quantity_Out":num,
+                # "Status":"出庫"
+            }
+            res=create_material_borrow_log(data)
+            if "LogID" in res:
+                st.success("借用成功")
+
+@st.fragment
+def material_return_page():
+    inventorys=get_material_borrow_logs(st.session_state.user_id)
+    df_inventory=pd.DataFrame(inventorys)
+    df_show=df_inventory[["LogID","case_name","material_name","Quantity_Out","Quantity_In","CreateTime"]]
+    df_inventory["CreateTime"] = pd.to_datetime(df_inventory["CreateTime"]).dt.strftime("%Y-%m-%d %H:%M:%S")
+    # st.dataframe(df_show,hide_index=True,column_config={
+    #     "LogID":"借出編號",
+    #     "case_name":"案件名稱",
+    #     "material_name":"材料名稱",
+    #     "Quantity_Out":"借出數量",
+    #     "Quantity_In":"歸還數量",
+    #     "Status":"狀態",
+    #     "CreateTime":"借出時間"
+    # })
+
+    #filter Quantity_In==null
+    df_inventory=df_inventory[df_inventory['Quantity_In'].isnull()]
+    
+
+    for index,inventory in df_inventory.iterrows():
+        with st.container(border=True):
+            # 主標題 - 編號（票號 📄）
+            st.markdown(f"**📄 編號:** `{inventory['LogID']}`")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.markdown(f"**📁 案件:** {inventory['case_name']}")
+                st.markdown(f"**🔧 名稱:** {inventory['material_name']}")
+
+            with col2:
+                st.markdown(f"**📦 借出:** {inventory['Quantity_Out']}")
+                st.markdown(f"**⏰ 借出時間:** {inventory['CreateTime']}")
+
+            # st.markdown(f"**歸還數量:** {inventory['Quantity_In']}")
+            # 處理型別，確保 slider 參數皆為 int
+            max_quantity = int(inventory['Quantity_Out']) if not pd.isnull(inventory['Quantity_Out']) else 0
+            default_value = inventory['Quantity_In']
+            if pd.isnull(default_value):
+              default_value = 0
+            else:
+              default_value = int(default_value)
+            return_quantity = st.slider(
+              "剩餘數量",
+              min_value=0,
+              max_value=max_quantity,
+              value=default_value,
+              key=f"return_quantity_{inventory['LogID']}"
+            )
+
+            if st.button("歸還",type="primary",use_container_width=True,key=f"return_button_{inventory['LogID']}"):
+              data={
+                "LogID":inventory['LogID'],
+                "Quantity_In":return_quantity
+              }
+              res=create_material_return_log(data)
+              if "LogID" in res:
+                st.success("歸還成功")
+                time.sleep(3)
+                st.rerun()
+
 
 
 def equipment_page():
@@ -354,11 +423,17 @@ def equipment_page():
 ## 打卡、材料借用歸還、機器借用歸還
 
 with st.container(border=True):
-    myradio=st.radio("選擇功能",("打卡","材料","設備"),horizontal=True)
+    # myradio=st.radio("選擇功能",("打卡","材料借用","材料歸還","設備借用","設備歸還"),horizontal=True)
+    myradio=st.selectbox("選擇功能",("打卡","材料借用","材料歸還","設備借用","設備歸還"))
 
 if myradio=="打卡":
     attendance_page()
-elif myradio=="材料":
+elif myradio=="材料借用":
     material_page()
-elif myradio=="設備":
+elif myradio=="材料歸還":
+    material_return_page()
+elif myradio=="設備借用":
     equipment_page()
+elif myradio=="設備歸還":
+    pass
+    # equipment_return_page()

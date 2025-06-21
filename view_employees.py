@@ -567,14 +567,21 @@ with tab5:
     if not df.empty and "CreateTime" in df.columns:
         df["CreateTime"] = pd.to_datetime(df["CreateTime"]).dt.strftime("%Y-%m-%d")
 
-    st.dataframe(df, hide_index=True, column_config={
-        "LogID": st.column_config.TextColumn("流水號"),
-        "case_name": st.column_config.TextColumn("案件"),
-        "material_name": st.column_config.TextColumn("材料"),
-        "Quantity_Out": st.column_config.TextColumn("借出數量"),
-        "Quantity_In": st.column_config.TextColumn("歸還數量"),
-        "CreateTime": st.column_config.TextColumn("借出時間")
-    })
+    # 新增欄位：是否已歸還
+    df["已歸還"] = df["Quantity_In"].notnull()
+
+    # 依照是否已歸還分組顯示
+    for is_returned, group in df.groupby("已歸還"):
+        status_label = "✅ 已歸還" if is_returned else "⏳ 未歸還"
+        st.markdown(f"#### {status_label}")
+        st.dataframe(group.drop(columns=["已歸還"]), hide_index=True, column_config={
+            "LogID": st.column_config.TextColumn("流水號"),
+            "case_name": st.column_config.TextColumn("案件"),
+            "material_name": st.column_config.TextColumn("材料"),
+            "Quantity_Out": st.column_config.TextColumn("借出數量"),
+            "Quantity_In": st.column_config.TextColumn("歸還數量"),
+            "CreateTime": st.column_config.TextColumn("借出時間")
+        })
 
 
     # if len(df_attendance)==0:
