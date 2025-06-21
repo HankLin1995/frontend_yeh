@@ -557,13 +557,13 @@ with tab4:
 
 with tab5:
     df_material_borrow_logs = get_material_borrow_logs(selected_user['UserID'])
-    st.write(df_material_borrow_logs)
-    if df_material_borrow_logs is None:
+    
+    if isinstance(df_material_borrow_logs, list):
+        df_material_borrow_logs = pd.DataFrame(df_material_borrow_logs)
+
+    if df_material_borrow_logs.empty:
         st.warning("目前查無借領紀錄。")
     else:
-
-        if isinstance(df_material_borrow_logs, list):
-            df_material_borrow_logs = pd.DataFrame(df_material_borrow_logs)
 
         df = df_material_borrow_logs[["LogID", "case_name", "material_name", "Quantity_Out", "Quantity_In", "CreateTime"]]
 
