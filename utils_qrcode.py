@@ -20,7 +20,7 @@ def verify_qr_code(image_path, expected_data):
         
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            decoded_objects = pyzbar.decode(test_image)
+            decoded_objects = decode(test_image)
             
         if not decoded_objects:
             return False, "QR碼可能無法被正確識別"

@@ -130,16 +130,22 @@ def display_materials(df):
                 edit_material(filtered_df.iloc[0]["MaterialID"])
 
         with col2:
-            if st.button("🗑️ 刪除材料",use_container_width=True):
-                from api import delete_material
-                for _, row in filtered_df.iterrows():
-                    try:
-                        delete_material(row["MaterialID"])
-                    except Exception as e:
-                        st.error(f"刪除失敗：{e}")
-                st.success("材料刪除成功！")
-                st.cache_data.clear()
-                st.rerun()
+            if st.button("🗑️ 刪除材料", use_container_width=True):
+              import os
+              from api import delete_material
+              for _, row in filtered_df.iterrows():
+                material_id = row["MaterialID"]
+                try:
+                  delete_material(material_id)
+                  # 刪除對應QRCODE圖片
+                  qrcode_path = f"./static/qrcode_materials/qrcode_{material_id}.png"
+                  if os.path.exists(qrcode_path):
+                    os.remove(qrcode_path)
+                except Exception as e:
+                  st.error(f"刪除失敗：{e}")
+              st.success("材料刪除成功！")
+              st.cache_data.clear()
+              st.rerun()
 
         with col3:
             if st.button("🖨️ 輸出QRCODE", use_container_width=True):
