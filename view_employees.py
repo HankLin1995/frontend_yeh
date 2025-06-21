@@ -557,6 +557,7 @@ with tab4:
 
 with tab5:
     df_material_borrow_logs = get_material_borrow_logs(selected_user['UserID'])
+    st.write(selected_user['UserID'])
     
     if isinstance(df_material_borrow_logs, list):
         df_material_borrow_logs = pd.DataFrame(df_material_borrow_logs)
