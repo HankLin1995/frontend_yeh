@@ -556,7 +556,7 @@ with tab4:
             get_salary_report(employee['id'],month)
 
 with tab5:
-    df_material_borrow_logs = get_material_borrow_logs(st.session_state.user_id)
+    df_material_borrow_logs = get_material_borrow_logs(selected_user['UserID'])
     # 若回傳為 list（通常為 list of dict），自動轉為 DataFrame，確保下方欄位索引語法正確
     if isinstance(df_material_borrow_logs, list):
       df_material_borrow_logs = pd.DataFrame(df_material_borrow_logs)

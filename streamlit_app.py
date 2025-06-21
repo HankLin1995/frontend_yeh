@@ -6,7 +6,7 @@ from api import create_user, get_user
 
 VERSION_NUMBER = "V2.5.3-TEST"
 
-st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon=":derelict_house_building:", layout="wide")
+st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon="🏚️", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")
 
 os.makedirs("./static/qrcode_materials", exist_ok=True)
