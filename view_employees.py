@@ -563,7 +563,7 @@ with tab5:
     else:
 
         if isinstance(df_material_borrow_logs, list):
-        df_material_borrow_logs = pd.DataFrame(df_material_borrow_logs)
+            df_material_borrow_logs = pd.DataFrame(df_material_borrow_logs)
 
         df = df_material_borrow_logs[["LogID", "case_name", "material_name", "Quantity_Out", "Quantity_In", "CreateTime"]]
 
