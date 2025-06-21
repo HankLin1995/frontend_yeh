@@ -561,15 +561,19 @@ with tab5:
     if isinstance(df_material_borrow_logs, list):
       df_material_borrow_logs = pd.DataFrame(df_material_borrow_logs)
 
-    df = df_material_borrow_logs[["LogID", "case_name", "material_name", "Quantity", "Status", "CreateTime"]]
+    df = df_material_borrow_logs[["LogID", "case_name", "material_name", "Quantity_Out", "Quantity_In", "CreateTime"]]
 
-    st.dataframe(df,hide_index=True,column_config={
-        "LogID":st.column_config.TextColumn("流水號"),
-        "case_name":st.column_config.TextColumn("案件"),
-        "material_name":st.column_config.TextColumn("材料"),
-        "Quantity":st.column_config.TextColumn("數量"),
-        "Status":st.column_config.TextColumn("狀態"),
-        "CreateTime":st.column_config.TextColumn("借出時間")
+    # 格式化 CreateTime 欄位，顯示日期與時間
+    if not df.empty and "CreateTime" in df.columns:
+        df["CreateTime"] = pd.to_datetime(df["CreateTime"]).dt.strftime("%Y-%m-%d")
+
+    st.dataframe(df, hide_index=True, column_config={
+        "LogID": st.column_config.TextColumn("流水號"),
+        "case_name": st.column_config.TextColumn("案件"),
+        "material_name": st.column_config.TextColumn("材料"),
+        "Quantity_Out": st.column_config.TextColumn("借出數量"),
+        "Quantity_In": st.column_config.TextColumn("歸還數量"),
+        "CreateTime": st.column_config.TextColumn("借出時間")
     })
 
 
