@@ -265,16 +265,21 @@ def attendance_page():
 
     res=get_attendance_by_user_id(st.session_state.user_id)
 
-    if res[len(res)-1]["ClockOutTime"] is None:
-
-        attendance_id=res[len(res)-1]["AttendanceID"]
-        clock_in_time=res[len(res)-1]["ClockInTime"]
-
-        with st.container(border=True):
-            clock_out(attendance_id,clock_in_time)
-    else:
+    if len(res)==0:
         with st.container(border=True):
             clock_in()
+    else:
+
+        if res[len(res)-1]["ClockOutTime"] is None:
+
+            attendance_id=res[len(res)-1]["AttendanceID"]
+            clock_in_time=res[len(res)-1]["ClockInTime"]
+
+            with st.container(border=True):
+                clock_out(attendance_id,clock_in_time)
+        else:
+            with st.container(border=True):
+                clock_in()
 
 
 def material_page():
