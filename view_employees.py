@@ -557,31 +557,35 @@ with tab4:
 
 with tab5:
     df_material_borrow_logs = get_material_borrow_logs(selected_user['UserID'])
-    # 若回傳為 list（通常為 list of dict），自動轉為 DataFrame，確保下方欄位索引語法正確
-    if isinstance(df_material_borrow_logs, list):
-      df_material_borrow_logs = pd.DataFrame(df_material_borrow_logs)
+    
+    if df_material_borrow_logs is None:
+        st.warning("目前查無借領紀錄。")
+    else:
 
-    df = df_material_borrow_logs[["LogID", "case_name", "material_name", "Quantity_Out", "Quantity_In", "CreateTime"]]
+        if isinstance(df_material_borrow_logs, list):
+        df_material_borrow_logs = pd.DataFrame(df_material_borrow_logs)
 
-    # 格式化 CreateTime 欄位，顯示日期與時間
-    if not df.empty and "CreateTime" in df.columns:
-        df["CreateTime"] = pd.to_datetime(df["CreateTime"]).dt.strftime("%Y-%m-%d")
+        df = df_material_borrow_logs[["LogID", "case_name", "material_name", "Quantity_Out", "Quantity_In", "CreateTime"]]
 
-    # 新增欄位：是否已歸還
-    df["已歸還"] = df["Quantity_In"].notnull()
+        # 格式化 CreateTime 欄位，顯示日期與時間
+        if not df.empty and "CreateTime" in df.columns:
+            df["CreateTime"] = pd.to_datetime(df["CreateTime"]).dt.strftime("%Y-%m-%d")
 
-    # 依照是否已歸還分組顯示
-    for is_returned, group in df.groupby("已歸還"):
-        status_label = "✅ 已歸還" if is_returned else "⏳ 未歸還"
-        st.markdown(f"#### {status_label}")
-        st.dataframe(group.drop(columns=["已歸還"]), hide_index=True, column_config={
-            "LogID": st.column_config.TextColumn("流水號"),
-            "case_name": st.column_config.TextColumn("案件"),
-            "material_name": st.column_config.TextColumn("材料"),
-            "Quantity_Out": st.column_config.TextColumn("借出數量"),
-            "Quantity_In": st.column_config.TextColumn("歸還數量"),
-            "CreateTime": st.column_config.TextColumn("借出時間")
-        })
+        # 新增欄位：是否已歸還
+        df["已歸還"] = df["Quantity_In"].notnull()
+
+        # 依照是否已歸還分組顯示
+        for is_returned, group in df.groupby("已歸還"):
+            status_label = "✅ 已歸還" if is_returned else "⏳ 未歸還"
+            st.markdown(f"#### {status_label}")
+            st.dataframe(group.drop(columns=["已歸還"]), hide_index=True, column_config={
+                "LogID": st.column_config.TextColumn("流水號"),
+                "case_name": st.column_config.TextColumn("案件"),
+                "material_name": st.column_config.TextColumn("材料"),
+                "Quantity_Out": st.column_config.TextColumn("借出數量"),
+                "Quantity_In": st.column_config.TextColumn("歸還數量"),
+                "CreateTime": st.column_config.TextColumn("借出時間")
+            })
 
 
     # if len(df_attendance)==0:
