@@ -71,14 +71,19 @@ def format_hours_minutes(hours_float):
     return f"{hours}小時{minutes}分鐘"
 
 def get_active_employee():
-    
-    with st.sidebar.container(border=True):
-
-        users=get_users()
-        user_name_list=[f"{u['UserName']}" for u in users]
-        selected_lineid = st.selectbox("🆔 選擇 LINE ID", user_name_list)
-        selected_user = next((u for u in users if u['UserName'] == selected_lineid), None)
-        return selected_user
+  """
+  以唯一 UserID 為選擇依據，避免重複名稱造成選錯人。
+  側邊欄顯示格式：UserName (UserID)
+  """
+  with st.sidebar.container(border=True):
+    users = get_users()
+    # 顯示名稱為「UserName (UserID)」
+    options = [f"{u['UserName']} ({u['UserID']})" for u in users]
+    selected_option = st.selectbox("🆔 選擇 LINE ID", options)
+    # 解析 UserID
+    selected_userid = selected_option.split("(")[-1].replace(")", "").strip()
+    selected_user = next((u for u in users if str(u['UserID']) == selected_userid), None)
+    return selected_user
 
 def display_employee(employee):
 
