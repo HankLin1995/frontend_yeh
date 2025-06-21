@@ -35,6 +35,8 @@ else:
         st.session_state.logged_in = False
     if "user_role" not in st.session_state:
         st.session_state.user_role = ""
+    if "user_id" not in st.session_state:
+        st.session_state.user_id = ""
 
 # LINE LOGIN
 
@@ -91,7 +93,7 @@ def line_login():
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.markdown(f" ### :derelict_house_building: 均嘉ERP系統")
+        st.markdown(f" ### 🏚️ 均嘉ERP系統")
         st.write(" :point_right: 使用前請先至**LINE群組**中進行人員設定")
         st.image(r"./static/LOGO.jpg")
 
