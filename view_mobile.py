@@ -18,6 +18,7 @@ from api import (
     get_materials,
     get_material_borrow_logs,
     create_material_return_log,
+    get_material
 )
 from PIL import Image
 import pandas as pd
@@ -338,7 +339,7 @@ def material_page():
             st.warning("未檢測到QR碼，請調整相機角度和距離")
             return
 
-        material=get_material_by_id(material_id)
+        material=get_material(material_id)
         if material is None:
             st.warning("未找到該材料")
             return
@@ -430,9 +431,9 @@ def equipment_page():
 
 with st.container(border=True):
     # myradio=st.radio("選擇功能",("打卡","材料借用","材料歸還","設備借用","設備歸還"),horizontal=True)
-    myradio=st.selectbox("選擇功能",("打卡","材料借用","材料歸還","設備借用","設備歸還"))
+    myradio=st.selectbox("選擇功能",("打卡簽到","材料借用","材料歸還","設備借用","設備歸還"))
 
-if myradio=="打卡":
+if myradio=="打卡簽到":
     attendance_page()
 elif myradio=="材料借用":
     material_page()
