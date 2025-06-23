@@ -242,6 +242,11 @@ def get_material_borrow_logs(user_id):
     resp = requests.get(f"{BASE_URL}/materials/inventory/user/{user_id}")
     resp.raise_for_status()
     return resp.json()
+    
+def get_material_logs_by_case_id(case_id):
+    resp = requests.get(f"{BASE_URL}/materials/inventory/query?case_id={case_id}")
+    resp.raise_for_status()
+    return resp.json()
 
 # ====== 設備管理 ======
 
@@ -325,6 +330,11 @@ def create_clock_out(attendance_id,data):
 
 def get_attendance_by_user_id(user_id):
     resp = requests.get(f"{BASE_URL}/attendance/query?user_id={user_id}")
+    resp.raise_for_status()
+    return resp.json()
+
+def get_attendance_by_case_id(case_id):
+    resp = requests.get(f"{BASE_URL}/attendance/query?case_id={case_id}")
     resp.raise_for_status()
     return resp.json()
 

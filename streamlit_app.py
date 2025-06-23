@@ -164,7 +164,7 @@ else:
     equipment_page = st.Page("view_equipment.py", title="機具管理", icon=":material/construction:")
     material_page = st.Page("view_materials.py", title="材料管理", icon=":material/inventory_2:")
     mobile_page = st.Page("view_mobile.py", title="勤務回報", icon=":material/assignment_turned_in:", default=True)
-
+    dashboard_page = st.Page("view_dashboard.py", title="儀錶板", icon=":material/dashboard:")
 
     # NAVIGATION
 
@@ -176,7 +176,7 @@ else:
                 "專案":[case_page,photo_page,photo_readonly_page],
                 "人事":[employee_page],
                 "物料":[material_page,equipment_page],
-                "其他":[mobile_page]
+                "其他":[mobile_page,dashboard_page]
             }
         )
 
