@@ -4,7 +4,7 @@ import requests
 import os
 from api import create_user, get_user
 
-VERSION_NUMBER = "V2.5.3-TEST"
+VERSION_NUMBER = "V2.5.4"
 
 st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon="🏚️", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")
@@ -176,7 +176,8 @@ else:
                 "專案":[case_page,photo_page,photo_readonly_page],
                 "人事":[employee_page],
                 "物料":[material_page,equipment_page],
-                "其他":[mobile_page,dashboard_page]
+                # "儀錶板":[dashboard_page],
+                "其他":[mobile_page]
             }
         )
 
