@@ -188,6 +188,10 @@ def clock_in():
     st.subheader("上班簽到")
 
     st.markdown("---")
+    
+    # 初始化 session state 來存儲拍照時間
+    if "clock_in_time" not in st.session_state:
+        st.session_state.clock_in_time = None
 
     upload_photo = st.camera_input("📸 上班自拍照片:", key="clock_in_photo")
 
@@ -197,6 +201,10 @@ def clock_in():
     selected_case_id=st.selectbox("負責案件",options=list(case_options.keys()),format_func=lambda x: case_options.get(x,x))
 
     if upload_photo is not None:
+        # 當照片被拍攝時，立即記錄時間
+        if st.session_state.clock_in_time is None:
+            st.session_state.clock_in_time = datetime.now(taiwan_tz)
+            
         photo_base64 = base64.b64encode(upload_photo.read()).decode()
         
         if st.session_state.safety_check_result==False:
@@ -204,21 +212,23 @@ def clock_in():
                 safety_check()
         else:
             st.markdown("上班打卡時間")
-            now = datetime.now(taiwan_tz)
-            formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
+            # 使用保存的拍照時間，而不是當前時間
+            formatted_time = st.session_state.clock_in_time.strftime("%Y-%m-%d %H:%M:%S")
             st.info(formatted_time)
-
-            # if st.button("簽到",type='primary',use_container_width=True):
 
             data={
                 "CaseID":selected_case_id,
                 "UserID":st.session_state.user_id,
                 "IsTrained":True,
-                "ClockInPhoto":photo_base64
+                "ClockInPhoto":photo_base64,
+                # 使用保存的拍照時間
+                "ClockInTime": formatted_time
             }
 
             create_clock_in(data)
+            # 重置 session state
             st.session_state.safety_check_result=False
+            st.session_state.clock_in_time = None
             st.rerun()
 
 def clock_out(attendance_id , clock_in_time):

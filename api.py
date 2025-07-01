@@ -42,7 +42,7 @@ def get_groups(skip: int = 0, limit: int = 100):
     return response.json()
 
 def get_cases(skip: int = 0, limit: int = 100):
-    response = requests.get(f"{BASE_URL}/cases")
+    response = requests.get(f"{BASE_URL}/cases/")
     response.raise_for_status()
     return response.json()
 
