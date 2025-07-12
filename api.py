@@ -375,3 +375,91 @@ def delete_worklog(worklog_id):
     resp = requests.delete(f"{BASE_URL}/worklogs/{worklog_id}")
     resp.raise_for_status()
     return resp.json()
+
+# ====== 請假管理 ======
+
+# 建立員工年度假別配額
+def create_leave_entitlement(data):
+    resp = requests.post(f"{BASE_URL}/leave/entitlements", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+# 取得全部假別配額
+def get_leave_entitlements():
+    resp = requests.get(f"{BASE_URL}/leave/entitlements/")
+    resp.raise_for_status()
+    return resp.json()
+
+# 取得特定假別配額
+def get_leave_entitlement(entitlement_id):
+    resp = requests.get(f"{BASE_URL}/leave/entitlements/{entitlement_id}")
+    resp.raise_for_status()
+    return resp.json()
+
+# 取得特定使用者的假別配額
+def get_user_leave_entitlements(user_id, year=None):
+    params = {}
+    if year:
+        params["year"] = year
+    
+    resp = requests.get(f"{BASE_URL}/leave/entitlements/user/{user_id}", params=params)
+    resp.raise_for_status()
+    return resp.json()
+
+# 更新假別配額
+def update_leave_entitlement(entitlement_id, data):
+    resp = requests.put(f"{BASE_URL}/leave/entitlements/{entitlement_id}", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+# 根據年資自動計算特別休假天數
+def auto_calculate_special_leave(user_id, year):
+    resp = requests.post(f"{BASE_URL}/leave/entitlements/auto-calculate?user_id={user_id}&year={year}")
+    # resp.raise_for_status()
+    return resp.json()
+
+# 提交請假申請
+def create_leave_request(data):
+    resp = requests.post(f"{BASE_URL}/leave/requests", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+# 查詢請假申請
+def get_leave_requests(user_id=None, status=None, start_date=None, end_date=None, leave_type=None, skip=0, limit=100):
+    params = {"skip": skip, "limit": limit}
+    if user_id:
+        params["user_id"] = user_id
+    if status:
+        params["status"] = status
+    if start_date:
+        params["start_date"] = start_date
+    if end_date:
+        params["end_date"] = end_date
+    if leave_type:
+        params["leave_type"] = leave_type
+    
+    resp = requests.get(f"{BASE_URL}/leave/requests", params=params)
+    resp.raise_for_status()
+    return resp.json()
+
+# 取得特定請假申請
+def get_leave_request(request_id):
+    resp = requests.get(f"{BASE_URL}/leave/requests/{request_id}")
+    resp.raise_for_status()
+    return resp.json()
+
+# 審核請假申請
+def approve_leave_request(request_id, data):
+    resp = requests.put(f"{BASE_URL}/leave/requests/{request_id}/approve", json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+# 查詢假別餘額
+def get_leave_balance(user_id, year=None):
+    params = {}
+    if year:
+        params["year"] = year
+    
+    resp = requests.get(f"{BASE_URL}/leave/balance/{user_id}", params=params)
+    resp.raise_for_status()
+    return resp.json()

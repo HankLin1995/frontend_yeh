@@ -18,7 +18,11 @@ from api import (
     get_materials,
     get_material_borrow_logs,
     create_material_return_log,
-    get_material
+    get_material,
+    create_leave_request,
+    get_leave_requests,
+    get_leave_request,
+    get_leave_balance
 )
 from PIL import Image
 import pandas as pd
@@ -437,14 +441,110 @@ def equipment_page():
     st.write("這是設備借用歸還頁面")
     # 這裡可以添加設備借用歸還的相關功能
 
-## 打卡、材料借用歸還、機器借用歸還
+# @st.fragment
+def leave_request_page():
+    """請假申請頁面"""
+
+    if "default_start_time" not in st.session_state:
+        st.session_state.default_start_time = datetime.strptime("08:00", "%H:%M").time()  # 上午8.00
+    if "default_end_time" not in st.session_state:
+        st.session_state.default_end_time = datetime.strptime("17:00", "%H:%M").time()  # 下午5.00
+
+    default_start_time=st.session_state.default_start_time
+    default_end_time=st.session_state.default_end_time
+
+    # 請假表單
+    with st.container(border=True):
+        # st.markdown("#### 填寫請假資訊")
+        
+        leave_type = st.selectbox(
+            "請假類型",
+            options=[
+                "annual_special", 
+                "personal", 
+                "sick"
+            ],
+            format_func=lambda x: {
+                "annual_special": "特別休假",
+                "personal": "事假",
+                "sick": "病假"
+            }.get(x, x)
+        )
+        # 請假日期
+        col1, col2 = st.columns(2)
+        with col1:
+            start_date = st.date_input("開始日期", datetime.now(taiwan_tz).date())
+        with col2:
+            end_date = st.date_input("結束日期", datetime.now(taiwan_tz).date())
+        
+        # 請假時間
+        col1, col2 = st.columns(2)
+        with col1:
+            start_time = st.time_input("開始時間",default_start_time)
+        with col2:
+            end_time = st.time_input("結束時間",default_end_time)
+        # 請假時數計算
+        if start_date == end_date:
+            # 同一天，計算時間差
+            start_datetime = datetime.combine(start_date, start_time)
+            end_datetime = datetime.combine(end_date, end_time)
+            hours_diff = (end_datetime - start_datetime).total_seconds() / 3600
+
+            # 扣除午休時間 (假設午休時間為 12:00-13:00)
+            if start_time <= datetime.strptime("12:00", "%H:%M").time() and end_time >= datetime.strptime("13:00", "%H:%M").time():
+                hours_diff -= 1
+            leave_hours = min(8, max(0, hours_diff))
+        else:
+            # 跨天，計算天數 * 8小時
+            days_diff = (end_date - start_date).days + 1
+            leave_hours = days_diff * 8
+        
+
+        st.info(f"請假時數: {leave_hours:.1f} 小時")
+        
+        # 請假原因
+        reason = st.text_area("請假原因")
+        
+        # 提交按鈕
+        submitted = st.button("提交請假申請", type="primary", use_container_width=True)
+        
+        if submitted:
+            # 準備請假資料
+            leave_data = {
+                "UserID": st.session_state.user_id,
+                "LeaveType": leave_type,
+                "StartDate": start_date.isoformat(),
+                "EndDate": end_date.isoformat(),
+                "StartTime": start_time.isoformat(),
+                "EndTime": end_time.isoformat(),
+                "LeaveHours": float(leave_hours),
+                "Reason": reason
+            }
+            st.write(leave_data)
+            try:
+                # 提交請假申請
+                response = create_leave_request(leave_data)
+                if "RequestID" in response:
+                    st.success(f"請假申請已成功提交！申請編號: {response['RequestID']}")
+                    # 清空表單或重新載入頁面
+                    time.sleep(2)
+                    st.rerun()
+                else:
+                    st.error(f"請假申請提交失敗: {response}")
+            except Exception as e:
+                st.error(f"請假申請提交失敗: {str(e)}")
 
 with st.container(border=True):
     # myradio=st.radio("選擇功能",("打卡","材料借用","材料歸還","設備借用","設備歸還"),horizontal=True)
-    myradio=st.selectbox("選擇功能",("打卡簽到","材料借用","材料歸還","設備借用","設備歸還"))
+    myradio=st.selectbox("選擇功能",("打卡簽到","材料借用","材料歸還","設備借用","設備歸還","請假申請","請假紀錄"))
 
 if myradio=="打卡簽到":
     attendance_page()
+elif myradio=="請假申請":
+    leave_request_page()
+elif myradio=="請假紀錄":
+    pass
+    # leave_history_page()
 elif myradio=="材料借用":
     material_page()
 elif myradio=="材料歸還":
