@@ -379,15 +379,25 @@ def delete_worklog(worklog_id):
 # ====== 請假管理 ======
 
 # 建立員工年度假別配額
-def create_leave_entitlement(data):
-    resp = requests.post(f"{BASE_URL}/leave/entitlements", json=data)
-    resp.raise_for_status()
-    return resp.json()
+# def create_leave_entitlement(data):
+#     resp = requests.post(f"{BASE_URL}/leave/entitlements", json=data)
+#     resp.raise_for_status()
+#     return resp.json()
 
+def create_leave_entitlement_with_line_id(line_id, year):
+    resp = requests.post(
+        f"{BASE_URL}/leave/entitlements/with-line-id",
+        params={"line_id": line_id, "year": year}
+        # json={},  # 空 JSON 物件
+        # headers={"accept": "application/json"}
+    )
+    # resp.raise_for_status()
+    return resp.json()
+    
 # 取得全部假別配額
-def get_leave_entitlements():
-    resp = requests.get(f"{BASE_URL}/leave/entitlements/")
-    resp.raise_for_status()
+def get_leave_entitlements(year):
+    resp = requests.get(f"{BASE_URL}/leave/entitlements/?year={year}")
+    # resp.raise_for_status()
     return resp.json()
 
 # 取得特定假別配額

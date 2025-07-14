@@ -180,39 +180,59 @@ def leave_approval_page():
 
 ###===========MAIN===========###
 
-
-users=api.get_users()
+# users=api.get_users()
 employees=api.get_employees()
 
-df_users=pd.DataFrame(users)
+df_employees=pd.DataFrame(employees)
+# st.dataframe(df_employees)
 
+years=list(range(2025,datetime.now(taiwan_tz).year+10))
 
-if st.sidebar.button("新增假別配額"):
-    this_year=datetime.now(taiwan_tz).year
-    for employee in employees:
+select_year=st.sidebar.selectbox("年度",years,index=years.index(datetime.now(taiwan_tz).year))
+
+if st.sidebar.button("新增年度假別日數",type="primary"):
+    for i,employee in df_employees.iterrows():
         line_id=employee["line_id"]
-        res=api.auto_calculate_special_leave(line_id,this_year)
+        res=api.create_leave_entitlement_with_line_id(line_id,select_year)
         st.write(res)
     st.rerun()
 
-leaves=api.get_leave_entitlements()
-df_leaves=pd.DataFrame(leaves)
-df_leaves=pd.merge(df_leaves,df_users,on="UserID",how="left")
+leave_entitlement=api.get_leave_entitlements(select_year)
 
-df_leaves_show=df_leaves[["Year","EntitlementID","UserID","UserName","AnnualSpecialLeave","PersonalLeave","SickLeave"]]
 
-# emoji
-col1,col2=st.columns(2)
-with col1:
-    st.markdown("### 📊 年度假別配額總表")
-with col2:
-    year=st.selectbox("年度",options=df_leaves["Year"].unique(),index=df_leaves["Year"].unique().tolist().index(datetime.now(taiwan_tz).year))
-st.dataframe(df_leaves_show[df_leaves_show["Year"]==year],hide_index=True,column_config={
-    "Year": None,
-    "EntitlementID": "配額ID",
-    "UserID": None,
-    "UserName": "員工姓名",
-    "AnnualSpecialLeave": "特別休假",
-    "PersonalLeave": "事假",
-    "SickLeave": "病假",
-})
+if "detail" in leave_entitlement:
+    st.info(leave_entitlement["detail"])
+else:
+    df_leave_entitlement=pd.DataFrame(leave_entitlement)
+
+    df_show=["EntitlementID","Year","name","AnnualSpecialLeave","PersonalLeave","SickLeave"]
+
+    df=df_leave_entitlement[df_show]
+
+    # for col in ["AnnualSpecialLeave", "PersonalLeave", "SickLeave"]:
+    #     df[col] = df[col].apply(lambda x: round(float(x), 1) if x not in [None, ""] else 0.0)
+
+    st.markdown("### 📊 員工年度假別日數")
+
+    event=st.dataframe(df,
+                        hide_index=True,
+                        column_config={
+                            "EntitlementID": None,
+                            "Year": None,
+                            "name": "員工姓名",
+                            "AnnualSpecialLeave": "特別休假",
+                            "PersonalLeave": "事假",
+                            "SickLeave": "病假",
+                        },
+                        # on_select="rerun",
+                        # selection_mode="multi-row"
+                        )
+
+    # select_users = event.selection.rows
+    # filtered_df = df.iloc[select_users]
+
+    # if filtered_df.empty:
+    #     pass
+    # else:
+    #     if st.button("編輯日數",key="edit_entitlement"):
+    #         edit_entitlement_ui(filtered_df)
