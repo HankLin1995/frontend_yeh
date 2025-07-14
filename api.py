@@ -435,16 +435,10 @@ def create_leave_request(data):
     return resp.json()
 
 # 查詢請假申請
-def get_leave_requests(user_id=None, status=None, start_date=None, end_date=None, leave_type=None, skip=0, limit=100):
+def get_leave_requests(status=None, leave_type=None, skip=0, limit=100):
     params = {"skip": skip, "limit": limit}
-    if user_id:
-        params["user_id"] = user_id
     if status:
         params["status"] = status
-    if start_date:
-        params["start_date"] = start_date
-    if end_date:
-        params["end_date"] = end_date
     if leave_type:
         params["leave_type"] = leave_type
     

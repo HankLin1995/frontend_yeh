@@ -212,7 +212,7 @@ else:
     # for col in ["AnnualSpecialLeave", "PersonalLeave", "SickLeave"]:
     #     df[col] = df[col].apply(lambda x: round(float(x), 1) if x not in [None, ""] else 0.0)
 
-    st.markdown("### 📊 員工年度假別日數")
+    st.markdown("### 📊 員工年度假別日數["+str(select_year)+"]")
 
     event=st.dataframe(df,
                         hide_index=True,
@@ -227,6 +227,53 @@ else:
                         # on_select="rerun",
                         # selection_mode="multi-row"
                         )
+
+    st.markdown("---")
+
+    st.markdown("### 📝 假單等待審核")
+
+    leave_requests=api.get_leave_requests(status="pending")
+
+    if leave_requests:
+
+        df_leave_requests=pd.DataFrame(leave_requests)
+
+        df_show=["UserName","LeaveType","StartDate","StartTime","EndDate","EndTime"]
+
+        LEAVE_TYPE={
+            "annual_special": "特別休假",
+            "personal": "事假",
+            "sick": "病假",
+        }
+
+        df_leave_requests["LeaveType"] = df_leave_requests["LeaveType"].map(LEAVE_TYPE)
+
+        event2=st.dataframe(df_leave_requests[df_show],hide_index=True,column_config={
+            "UserName": "員工姓名",
+            "LeaveType": "請假類別",
+            "StartDate": "開始日期",    
+            "StartTime": "開始時間",
+            "EndDate": "結束日期",
+            "EndTime": "結束時間",
+        },
+        on_select="rerun",
+        selection_mode="multi-row"
+        )
+
+        if event2.selection:
+            if st.button("審核"):
+                for req_id in df_leave_requests.iloc[event2.selection.rows]['RequestID']:
+                    data={
+                        "Status": "approved",
+                        "ApproverID":st.session_state.user_id
+                    }
+                    st.write(data)
+                    api.approve_leave_request(req_id,data)
+                st.success("請假申請已審核")
+                st.rerun()
+
+    else:
+        st.info("目前無請假申請")
 
     # select_users = event.selection.rows
     # filtered_df = df.iloc[select_users]

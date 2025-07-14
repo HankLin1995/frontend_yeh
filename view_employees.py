@@ -562,7 +562,7 @@ with tab4:
 
 with tab5:
     df_material_borrow_logs = get_material_borrow_logs(selected_user['UserID'])
-    st.write(selected_user['UserID'])
+    # st.write(selected_user['UserID'])
     
     if isinstance(df_material_borrow_logs, list):
         df_material_borrow_logs = pd.DataFrame(df_material_borrow_logs)
@@ -571,7 +571,7 @@ with tab5:
         st.warning("目前查無借領紀錄。")
     else:
 
-        df = df_material_borrow_logs[["LogID", "case_name", "material_name", "Quantity_Out", "Quantity_In", "CreateTime"]]
+        df = df_material_borrow_logs[["LogID", "case_name", "material_name", "Quantity_Out", "Quantity_In", "CreateTime"]].copy()
 
         # 格式化 CreateTime 欄位，顯示日期與時間
         if not df.empty and "CreateTime" in df.columns:
