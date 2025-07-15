@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import re
 from utils_calendar import create_calendar_visualization
+# from view_leaves import LEAVE_TYPE
 
 def get_marked_dates(df):
     """
@@ -62,7 +63,8 @@ from api import (
     delete_salary,
     get_attendance_by_user_id,
     get_cases,
-    get_material_borrow_logs
+    get_material_borrow_logs,
+    get_leave_requests
 )
 
 def format_hours_minutes(hours_float):
@@ -434,7 +436,7 @@ st.markdown("")
 
 selected_user=get_active_employee()
 
-tab1, tab2, tab3, tab4,tab5 = st.tabs(["🧑‍💼基本資料", "🏅 證照", "💰 薪資","⏰ 打卡紀錄","🛠️ 材料紀錄"])
+tab1, tab2, tab3, tab4,tab5,tab6 = st.tabs(["🧑‍💼基本資料", "🏅 證照", "💰 薪資","⏰ 打卡紀錄","📅請假紀錄","🛠️ 材料紀錄"])
 
 with tab1:
     employee = get_employee_detail(selected_user['UserID'])
@@ -561,6 +563,37 @@ with tab4:
             get_salary_report(employee['id'],month)
 
 with tab5:
+    df_leaves=pd.DataFrame(get_leave_requests(user_id=selected_user['UserID']))
+    df_show_leaves=['RequestID','LeaveType','StartDate','EndDate','StartTime','EndTime','LeaveHours','Status','Reason']
+    
+    LEAVE_TYPE={
+        "annual_special": "特別休假",
+        "personal": "事假",
+        "sick": "病假",
+    }
+
+    STATUS={
+        "pending": "待審核",
+        "approved": "已審核",
+        "rejected": "已拒絕",
+    }
+
+    df_leaves['LeaveType']=df_leaves['LeaveType'].map(LEAVE_TYPE)
+    df_leaves['Status']=df_leaves['Status'].map(STATUS)
+
+    st.dataframe(df_leaves[df_show_leaves],hide_index=True,column_config={
+        "RequestID": "編號",
+        "LeaveType": "請假類別",
+        "StartDate": "開始日期",    
+        "StartTime": "開始時間",
+        "EndDate": "結束日期",
+        "EndTime": "結束時間",
+        "LeaveHours": "請假時數",
+        "Status": "狀態",
+        "Reason": "原因",
+    })
+
+with tab6:
     df_material_borrow_logs = get_material_borrow_logs(selected_user['UserID'])
     # st.write(selected_user['UserID'])
     
@@ -605,3 +638,4 @@ with tab5:
     #                 st.image(f"{BASE_URL}/{record['ClockInPhoto']}", caption=record['ClockInTime'])
     #             with col2:
     #                 st.image(f"{BASE_URL}/{record['ClockOutPhoto']}", caption=record['ClockOutTime'])
+
