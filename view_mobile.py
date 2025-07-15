@@ -22,7 +22,8 @@ from api import (
     create_leave_request,
     get_leave_requests,
     get_leave_request,
-    get_leave_balance
+    get_leave_balance,
+    get_user_leave_entitlements
 )
 from PIL import Image
 import pandas as pd
@@ -470,6 +471,43 @@ def leave_request_page():
                 "sick": "病假"
             }.get(x, x)
         )
+
+        entitlements=get_user_leave_entitlements(st.session_state.user_id, datetime.now(taiwan_tz).year)
+        
+        # 顯示請假配額和已使用數
+        if entitlements and len(entitlements) > 0:
+            entitlement = entitlements[0]
+            
+            leave_info = {
+                "annual_special": {
+                    "name": "特別休假",
+                    "total": float(entitlement.get("AnnualSpecialLeave", 0)),
+                    "used": float(entitlement.get("AnnualSpecialLeaveUsed", 0))
+                },
+                "personal": {
+                    "name": "事假",
+                    "total": float(entitlement.get("PersonalLeave", 0)),
+                    "used": float(entitlement.get("PersonalLeaveUsed", 0))
+                },
+                "sick": {
+                    "name": "病假",
+                    "total": float(entitlement.get("SickLeave", 0)),
+                    "used": float(entitlement.get("SickLeaveUsed", 0))
+                }
+            }
+            
+            selected_leave = leave_info.get(leave_type, {})
+            if selected_leave:
+                st.markdown("**"+str(selected_leave['total']-selected_leave['used'])+"** 天可用")
+                # col1, col2, col3 = st.columns(3,border=True)
+                # with col1:
+                #     st.metric("總天數", f"{selected_leave['total']:.1f}")
+                # with col2:
+                #     st.metric("已使用", f"{selected_leave['used']:.1f}")
+                # with col3:
+                #     remaining = selected_leave['total'] - selected_leave['used']
+                #     st.metric("剩餘", f"{remaining:.1f}")
+        
         # 請假日期
         col1, col2 = st.columns(2)
         with col1:
@@ -536,14 +574,14 @@ def leave_request_page():
 
 with st.container(border=True):
     # myradio=st.radio("選擇功能",("打卡","材料借用","材料歸還","設備借用","設備歸還"),horizontal=True)
-    myradio=st.selectbox("選擇功能",("打卡簽到","材料借用","材料歸還","設備借用","設備歸還","請假申請","請假紀錄"))
+    myradio=st.selectbox("選擇功能",("打卡簽到","材料借用","材料歸還","設備借用","設備歸還","請假申請"))
 
 if myradio=="打卡簽到":
     attendance_page()
 elif myradio=="請假申請":
     leave_request_page()
-elif myradio=="請假紀錄":
-    pass
+# elif myradio=="請假紀錄":
+#     pass
     # leave_history_page()
 elif myradio=="材料借用":
     material_page()
