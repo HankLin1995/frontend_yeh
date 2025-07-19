@@ -564,34 +564,39 @@ with tab4:
 
 with tab5:
     df_leaves=pd.DataFrame(get_leave_requests(user_id=selected_user['UserID']))
-    df_show_leaves=['RequestID','LeaveType','StartDate','EndDate','StartTime','EndTime','LeaveHours','Status','Reason']
-    
-    LEAVE_TYPE={
-        "annual_special": "特別休假",
-        "personal": "事假",
-        "sick": "病假",
-    }
 
-    STATUS={
-        "pending": "待審核",
-        "approved": "已審核",
-        "rejected": "已拒絕",
-    }
+    if df_leaves.empty:
+        st.warning("目前查無請假紀錄。")
+    else:
 
-    df_leaves['LeaveType']=df_leaves['LeaveType'].map(LEAVE_TYPE)
-    df_leaves['Status']=df_leaves['Status'].map(STATUS)
+        df_show_leaves=['RequestID','LeaveType','StartDate','EndDate','StartTime','EndTime','LeaveHours','Status','Reason']
+        
+        LEAVE_TYPE={
+            "annual_special": "特別休假",
+            "personal": "事假",
+            "sick": "病假",
+        }
 
-    st.dataframe(df_leaves[df_show_leaves],hide_index=True,column_config={
-        "RequestID": "編號",
-        "LeaveType": "請假類別",
-        "StartDate": "開始日期",    
-        "StartTime": "開始時間",
-        "EndDate": "結束日期",
-        "EndTime": "結束時間",
-        "LeaveHours": "請假時數",
-        "Status": "狀態",
-        "Reason": "原因",
-    })
+        STATUS={
+            "pending": "待審核",
+            "approved": "已審核",
+            "rejected": "已拒絕",
+        }
+
+        df_leaves['LeaveType']=df_leaves['LeaveType'].map(LEAVE_TYPE)
+        df_leaves['Status']=df_leaves['Status'].map(STATUS)
+
+        st.dataframe(df_leaves[df_show_leaves],hide_index=True,column_config={
+            "RequestID": "編號",
+            "LeaveType": "請假類別",
+            "StartDate": "開始日期",    
+            "StartTime": "開始時間",
+            "EndDate": "結束日期",
+            "EndTime": "結束時間",
+            "LeaveHours": "請假時數",
+            "Status": "狀態",
+            "Reason": "原因",
+        })
 
 with tab6:
     df_material_borrow_logs = get_material_borrow_logs(selected_user['UserID'])
