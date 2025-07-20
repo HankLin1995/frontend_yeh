@@ -165,6 +165,7 @@ else:
     material_page = st.Page("view_materials.py", title="材料管理", icon=":material/inventory_2:")
     mobile_page = st.Page("view_mobile.py", title="勤務回報", icon=":material/assignment_turned_in:", default=True)
     dashboard_page = st.Page("view_dashboard.py", title="儀錶板", icon=":material/dashboard:")
+    dashboards_page = st.Page("view_dashboards.py", title="儀錶板", icon=":material/dashboard:")
     leave_page = st.Page("view_leaves.py", title="請假管理", icon=":material/event_available:")
 
     # NAVIGATION
@@ -178,7 +179,7 @@ else:
                 "人事":[employee_page,leave_page],
                 "物料":[material_page,equipment_page],
                 "儀錶板":[dashboard_page],
-                "其他":[mobile_page]
+                "其他":[mobile_page,dashboards_page]
             }
         )
 

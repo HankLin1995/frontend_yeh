@@ -120,7 +120,7 @@ labor_cost = 0
 work_hours = 0
 if not df_attendance.empty and 'WorkHours' in df_attendance.columns:
   work_hours = df_attendance['WorkHours'].sum()
-  labor_cost = work_hours * 3000000
+  labor_cost = work_hours * 200
 #   st.write(work_hours)
 
 # 機具成本（預留）
