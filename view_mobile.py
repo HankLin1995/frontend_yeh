@@ -348,7 +348,6 @@ def material_page():
         selected_case_id=st.selectbox("負責案件",options=list(case_options.keys()),format_func=lambda x: case_options.get(x,x))
 
         material_id=get_materail_id()
-        num=st.number_input("數量",min_value=1,value=1)
 
         if material_id is None:
             st.warning("未檢測到QR碼，請調整相機角度和距離")
@@ -361,6 +360,8 @@ def material_page():
         else:
             st.write(material["Name"])
 
+        num=st.number_input("數量",min_value=1,value=1,max_value=material["StockQuantity"])
+
         if st.button("借用",type="primary",use_container_width=True):
             data={
                 "UserID":st.session_state.user_id,
@@ -372,6 +373,7 @@ def material_page():
             res=create_material_borrow_log(data)
             if "LogID" in res:
                 st.success("借用成功")
+                # st.rerun()
 
 @st.fragment
 def material_return_page():

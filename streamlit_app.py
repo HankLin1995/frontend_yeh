@@ -177,7 +177,7 @@ else:
                 "專案":[case_page,photo_page,photo_readonly_page],
                 "人事":[employee_page,leave_page],
                 "物料":[material_page,equipment_page],
-                # "儀錶板":[dashboard_page],
+                "儀錶板":[dashboard_page],
                 "其他":[mobile_page]
             }
         )
