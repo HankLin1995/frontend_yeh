@@ -471,3 +471,10 @@ def get_leave_balance(user_id, year=None):
     resp = requests.get(f"{BASE_URL}/leave/balance/{user_id}", params=params)
     resp.raise_for_status()
     return resp.json()
+
+#======DASHBOARD======
+
+def get_cert_expired():
+    resp = requests.get(f"{BASE_URL}/employees/certificates/expired")
+    resp.raise_for_status()
+    return resp.json()

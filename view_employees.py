@@ -64,7 +64,8 @@ from api import (
     get_attendance_by_user_id,
     get_cases,
     get_material_borrow_logs,
-    get_leave_requests
+    get_leave_requests,
+    update_certificate
 )
 
 def format_hours_minutes(hours_float):
@@ -264,11 +265,53 @@ def display_certificates_table_view(employee_id):
                 st.write("生效日",cert['issue_date'],"~","到期日",cert['expiry_date'])
                 st.image(BASE_URL+"/"+cert['certificate_url'])
             
-            # Streamlit 不支援 form button in markdown, 改用 st.button
-            if st.button("刪除"+cert['certificate_name'], key=f"delete_cert_{cert['id']}"):
-                delete_certificate(int(cert["id"]))
-                st.success("證照資料已刪除！請重新整理頁面。")
-                st.rerun()
+                coll1,coll2=st.columns(2)
+
+                with coll1:
+
+                    # Streamlit 不支援 form button in markdown, 改用 st.button
+                    if st.button("刪除", key=f"delete_cert_{cert['id']}",use_container_width=True):
+                        delete_certificate(int(cert["id"]))
+                        st.success("證照資料已刪除！請重新整理頁面。")
+                        st.rerun()
+
+                with coll2:
+                    if st.button("編輯", key=f"edit_cert_{cert['id']}",use_container_width=True):
+                        edit_certificate_ui(cert)
+
+@st.dialog("編輯證照資料")
+def edit_certificate_ui(cert):
+    certificate_id = cert['id']
+    certificate_name = st.text_input("證照名稱", cert['certificate_name'])
+    
+    # 將字串日期轉換為 datetime.date 物件
+    expiry_date = None
+    
+    if cert['expiry_date']:
+        try:
+            expiry_date = datetime.datetime.strptime(cert['expiry_date'], "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    
+    #issue_date_input = st.date_input("發證日 (YYYY-MM-DD)", value=issue_date if issue_date else None)
+    expiry_date_input = st.date_input("到期日 (YYYY-MM-DD)", value=expiry_date if expiry_date else None)
+    
+    submitted = st.button("更新")
+    if submitted:
+        if not certificate_name:
+            st.error("請輸入證照名稱")
+            return
+        
+        # 準備更新資料
+        update_data = {
+            "certificate_name": certificate_name,
+            "expiry_date": expiry_date_input.strftime("%Y-%m-%d") if expiry_date_input else None
+        }
+
+        update_certificate(certificate_id, update_data)
+        st.success("證照資料已更新！請重新整理頁面。")
+        
+        st.rerun()
 
 def display_certificates_df_view(employee_id):
     
