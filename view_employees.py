@@ -399,7 +399,7 @@ def display_salaries():
                 "new_daily_wage": st.column_config.NumberColumn("目前薪資"),
                 "adjustment_date": st.column_config.TextColumn("更動日期"),
                 "adjustment_reason": st.column_config.TextColumn("備註"),
-                "id": None,
+                "id": "編號",
                 "employee_id":None
             },
             hide_index=True,
@@ -408,8 +408,9 @@ def display_salaries():
         )
 
         if st.button("刪除最近一筆",key="delete_salary"):
-            delete_salary(len(df_salary))
-            st.success("證照資料已刪除！請重新整理頁面。")
+            #最後一筆的編號
+            delete_salary(df_salary['id'].iloc[-1])
+            st.success("薪資資料已刪除！請重新整理頁面。")
             st.rerun()
 
     st.markdown("---")

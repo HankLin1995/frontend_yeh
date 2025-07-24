@@ -478,3 +478,35 @@ def get_cert_expired():
     resp = requests.get(f"{BASE_URL}/employees/certificates/expired")
     resp.raise_for_status()
     return resp.json()
+
+def get_equipment_maintenance():
+    resp = requests.get(f"{BASE_URL}/equipments/maintenance/overdue")
+    resp.raise_for_status()
+    return resp.json()
+
+#======CASE STATISTICS======
+
+def get_case_statistics(case_id):
+    """
+    獲取特定案件的統計資料，包含材料成本和人力工時
+    
+    Args:
+        case_id: 案件ID
+    
+    Returns:
+        dict: 包含案件統計資訊的字典
+    """
+    resp = requests.get(f"{BASE_URL}/cases/{case_id}/statistics")
+    resp.raise_for_status()
+    return resp.json()
+
+def get_all_cases_statistics():
+    """
+    獲取所有案件的統計資料摘要
+    
+    Returns:
+        list: 包含所有案件統計摘要的列表
+    """
+    resp = requests.get(f"{BASE_URL}/cases/statistics")
+    resp.raise_for_status()
+    return resp.json()

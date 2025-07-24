@@ -38,6 +38,33 @@ def equipment_form(equipment=None, mode='create'):
             st.rerun()
     return None
 
+@st.dialog("編輯下次保養日")
+def update_equipment_form(equipment):
+
+    import datetime
+
+    st.write(f"機具名稱: **{equipment['Name']}**")
+    # st.write(f"目前下次保養日: **{equipment['NextMaintenance'] if pd.notna(equipment['NextMaintenance']) else '未設定'}**")
+    
+    # 預設為今天
+    next_maintenance = st.date_input("下次保養日", value=datetime.date.today())
+    
+    if st.button("更新"):
+        try:
+            # 調用 API 更新保養日
+            update_equipment(
+                equipment_id=equipment['EquipmentID'],
+                data={"NextMaintenance": str(next_maintenance)}
+            )
+            
+            st.success(f"已更新 {equipment['Name']} 的下次保養日為 {next_maintenance}")
+            st.rerun()
+        except Exception as e:
+            st.error(f"更新失敗: {str(e)}")
+    
+    # if st.button("取消"):
+    #     st.rerun()
+
 def display_equipments(df):
     
     ## change columns order
@@ -82,6 +109,15 @@ def display_equipments(df):
                 generate_qrcode(row["EquipmentID"], row["Name"],row["Value"], row["Unit"], "./static/qrcode_equipments")
 
             st.toast("QRCODE輸出成功！")
+
+        #編輯選擇的機具的下次保養日
+        if st.button("✏️ 編輯下次保養日"):
+            # 只處理選擇的第一個機具
+            if len(filtered_df) > 1:
+                st.warning("一次只能編輯一個機具的保養日")
+            else:
+                equipment = filtered_df.iloc[0]
+                update_equipment_form(equipment)
 
 def example_download():
     equipment_example = pd.DataFrame([
