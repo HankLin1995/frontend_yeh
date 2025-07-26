@@ -417,63 +417,63 @@ def display_salaries():
 
     return df_salary
 
-def get_salary_report(employee_id,month):
+# def get_salary_report(employee_id,month):
     
-    # 取得該月薪資資料
-    salaries = get_salaries(employee['id'])
-    df_salary = pd.DataFrame(salaries)
+#     # 取得該月薪資資料
+#     salaries = get_salaries(employee['id'])
+#     df_salary = pd.DataFrame(salaries)
     
-    if df_salary.empty:
-        st.error("無法產生薪資單：未設定薪資資料")
-    else:
-        # 取得最新薪資
-        daily_wage = df_salary['new_daily_wage'].iloc[-1]
+#     if df_salary.empty:
+#         st.error("無法產生薪資單：未設定薪資資料")
+#     else:
+#         # 取得最新薪資
+#         daily_wage = df_salary['new_daily_wage'].iloc[-1]
         
-        # 計算總工時
-        total_hours = round(df_attendance['WorkHours'].apply(lambda x: sum(int(i) for i in re.findall(r'\d+', x.split('小時')[0]))).sum(), 1)
-        total_minutes = round(df_attendance['WorkHours'].apply(lambda x: sum(int(i) for i in re.findall(r'\d+', x.split('小時')[1].split('分鐘')[0]))).sum() / 60, 1)
-        total_work_hours = total_hours + total_minutes
+#         # 計算總工時
+#         total_hours = round(df_attendance['WorkHours'].apply(lambda x: sum(int(i) for i in re.findall(r'\d+', x.split('小時')[0]))).sum(), 1)
+#         total_minutes = round(df_attendance['WorkHours'].apply(lambda x: sum(int(i) for i in re.findall(r'\d+', x.split('小時')[1].split('分鐘')[0]))).sum() / 60, 1)
+#         total_work_hours = total_hours + total_minutes
         
-        # 計算應付薪資
-        hourly_rate = daily_wage / 8  # 假設一天工作8小時
-        total_salary = int(hourly_rate * total_work_hours)
+#         # 計算應付薪資
+#         hourly_rate = daily_wage / 8  # 假設一天工作8小時
+#         total_salary = int(hourly_rate * total_work_hours)
         
-        # 顯示薪資單
-        with st.container(border=True):
-            # emoji
-            st.markdown(f"### 📊 薪資單 - {month}月")
+#         # 顯示薪資單
+#         with st.container(border=True):
+#             # emoji
+#             st.markdown(f"### 📊 薪資單 - {month}月")
             
-            col1, col2 = st.columns(2)
-            with col1:
-                # st.markdown(f"**員工編號**: {employee['id']}")
-                st.markdown(f"**員工姓名**:王小明")
-            with col2:
-                st.markdown(f"**計算日期**: {datetime.datetime.now().strftime('%Y-%m-%d')}")
+#             col1, col2 = st.columns(2)
+#             with col1:
+#                 # st.markdown(f"**員工編號**: {employee['id']}")
+#                 st.markdown(f"**員工姓名**:王小明")
+#             with col2:
+#                 st.markdown(f"**計算日期**: {datetime.datetime.now().strftime('%Y-%m-%d')}")
             
-            st.markdown("---")
+#             st.markdown("---")
             
-            # 薪資明細
-            salary_data = {
-                "項目": ["基本時薪", "總工時", "應付薪資"],
-                "數值": [f"${hourly_rate:.2f}/小時", f"{total_work_hours}小時", f"${total_salary:,}"]
-            }
+#             # 薪資明細
+#             salary_data = {
+#                 "項目": ["基本時薪", "總工時", "應付薪資"],
+#                 "數值": [f"${hourly_rate:.2f}/小時", f"{total_work_hours}小時", f"${total_salary:,}"]
+#             }
             
-            df_salary_detail = pd.DataFrame(salary_data)
-            st.dataframe(df_salary_detail,hide_index=True)
+#             df_salary_detail = pd.DataFrame(salary_data)
+#             st.dataframe(df_salary_detail,hide_index=True)
             
-            # 出勤摘要
-            st.markdown("#### 出勤摘要")
-            attendance_summary = {
-                "日期": df_attendance['ClockInTime_calc'].dt.date,
-                "上班時間": df_attendance['ClockInTime_calc'].dt.strftime('%H:%M'),
-                "下班時間": df_attendance['ClockOutTime_calc'].dt.strftime('%H:%M'),
-                "工時": df_attendance['WorkHours']
-            }
+#             # 出勤摘要
+#             st.markdown("#### 出勤摘要")
+#             attendance_summary = {
+#                 "日期": df_attendance['ClockInTime_calc'].dt.date,
+#                 "上班時間": df_attendance['ClockInTime_calc'].dt.strftime('%H:%M'),
+#                 "下班時間": df_attendance['ClockOutTime_calc'].dt.strftime('%H:%M'),
+#                 "工時": df_attendance['WorkHours']
+#             }
             
-            df_summary = pd.DataFrame(attendance_summary)
-            st.dataframe(df_summary, hide_index=True)
+#             df_summary = pd.DataFrame(attendance_summary)
+#             st.dataframe(df_summary, hide_index=True)
                 
-            st.info("注意：此薪資單僅供參考，正式薪資請以人事部門核發為準。", icon="ℹ️")
+#             st.info("注意：此薪資單僅供參考，正式薪資請以人事部門核發為準。", icon="ℹ️")
 
 #emoji
 st.markdown("")
@@ -557,14 +557,43 @@ with tab4:
         #換算工時
         df_attendance['ClockInTime_calc'] = pd.to_datetime(df_attendance['ClockInTime'])
         df_attendance['ClockOutTime_calc'] = pd.to_datetime(df_attendance['ClockOutTime'])
-        df_attendance['WorkHours'] = round((df_attendance['ClockOutTime_calc'] - df_attendance['ClockInTime_calc']).dt.total_seconds() / 3600,4)
-
+        
+        # 建立工時計算函數，依照規則：早上 7:30 前到，下午 4:30 後走，算一天（8 小時）
+        def calculate_work_hours(row):
+            # 獲取打卡日期的年月日
+            date = row['ClockInTime_calc'].date()
+            
+            # 設定標準上下班時間點
+            standard_start = pd.Timestamp(datetime.datetime.combine(date, datetime.time(7, 30, 0)))
+            standard_end = pd.Timestamp(datetime.datetime.combine(date, datetime.time(16, 30, 0)))
+            
+            # 實際打卡時間
+            actual_start = row['ClockInTime_calc']
+            actual_end = row['ClockOutTime_calc']
+            
+            # 如果早上 7:30 前到，以 7:30 計算
+            effective_start = standard_start if actual_start < standard_start else actual_start
+            
+            # 如果下午 4:30 後走，以 4:30 計算
+            effective_end = standard_end if actual_end > standard_end else actual_end
+            
+            # 如果符合規則（早到晚走），直接給 8 小時
+            if actual_start <= standard_start and actual_end >= standard_end:
+                return 8.0
+            
+            # 其他情況，計算實際工時
+            hours = (effective_end - effective_start).total_seconds() / 3600
+            return round(hours, 4)
+        
+        # 應用工時計算函數
+        df_attendance['WorkHours'] = df_attendance.apply(calculate_work_hours, axis=1)
+        
+        # 格式化工時顯示
         df_attendance['WorkHours'] = df_attendance['WorkHours'].apply(format_hours_minutes)
 
 
         # with st.sidebar:
         #     #filter with month
-        #     month=st.selectbox("月份",options=df_attendance['ClockInTime_calc'].dt.month.unique())
         #     df_attendance=df_attendance[df_attendance['ClockInTime_calc'].dt.month==month]
 
         col1,col2,col3=st.columns([1,1,1])
@@ -601,10 +630,10 @@ with tab4:
                 "WorkHours":st.column_config.TextColumn("工時")
             })
 
-        # 薪資單功能
-        if st.button("列印薪資單", type="primary"):
+        # # 薪資單功能
+        # if st.button("列印薪資單", type="primary"):
 
-            get_salary_report(employee['id'],month)
+        #     get_salary_report(employee['id'],month)
 
 with tab5:
     df_leaves=pd.DataFrame(get_leave_requests(user_id=selected_user['UserID']))

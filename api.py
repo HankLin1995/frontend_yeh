@@ -343,6 +343,11 @@ def get_attendance_by_id(attendance_id):
     resp.raise_for_status()
     return resp.json()
 
+def get_attendance_by_month(month):
+    resp = requests.get(f"{BASE_URL}/attendance/monthly-report/{month}")
+    resp.raise_for_status()
+    return resp.json()
+
 # ====== 工作日誌 ======
 
 def get_worklogs(skip=0, limit=100):

@@ -1,48 +1,8 @@
 import streamlit as st
 import pandas as pd
 import datetime
-from api import get_cert_expired, get_cases, get_case_statistics, get_equipment_maintenance
-
-tab1, tab2 = st.tabs(["⏰ 時效控制", "📊 案件總覽"])
-
-with tab1:
-    #證照到期提醒
-    st.markdown("#### :bell: 證照到期提醒")
-
-    cert_expired=get_cert_expired()
-    df_cert_expired=pd.DataFrame(cert_expired)
-
-    df_show=["certificate_name","issue_date","expiry_date","employee_name","days_expired"]
-
-    st.dataframe(df_cert_expired[df_show],hide_index=True,column_config={
-        "certificate_name":"證照名稱",
-        "issue_date":"發證日",
-        "expiry_date":"到期日",
-        "employee_name":"員工名稱",
-        "days_expired":"超過天數"
-    })
-    st.divider()
-    #機具維護提醒
-    st.markdown("#### :bell: 機具維護提醒")
-    equipment_maintenance=get_equipment_maintenance()
-
-    df_equipment_maintenance=pd.DataFrame(equipment_maintenance)
-    df_show=["EquipmentID","Name","PurchaseDate","NextMaintenance","days_overdue"]
-    
-    st.dataframe(df_equipment_maintenance[df_show],hide_index=True,column_config={
-        "Name":"機具名稱",
-        "EquipmentID":"機具ID",
-        "PurchaseDate":"購買日期",
-        "NextMaintenance":"下次維護日期",
-        "days_overdue":"超過天數"
-    })
-    st.divider()
-    # #歸還逾期提醒
-    # st.markdown("#### :bell: 借用逾期提醒")
-    # st.divider()
-    # #出勤異常提醒
-    # st.markdown("#### :bell: 出勤異常提醒")
-
+import calendar
+from api import get_cert_expired, get_cases, get_case_statistics, get_equipment_maintenance, get_attendance_by_month
 
 def display_case_overview(case_id):
     """
@@ -155,16 +115,48 @@ def display_case_overview(case_id):
     else:
         st.info("此案件尚未有打卡記錄")
 
-def display_all_cases_overview():
-    """
-    顯示所有案件的成本統計摘要
-    """
-    # 這個函數預留給未來實作
-    # 如果 API 端點 /cases/statistics 已實作，可以在這裡顯示所有案件的統計摘要
-    st.info("所有案件統計摘要功能開發中...")
+tab1, tab2, tab3 = st.tabs(["⏰ 時效控制", "📊 案件總覽","👥 員工總覽"])
+
+with tab1:
+    #證照到期提醒
+    st.markdown("#### :bell: 證照到期提醒")
+
+    cert_expired=get_cert_expired()
+    df_cert_expired=pd.DataFrame(cert_expired)
+
+    df_show=["certificate_name","issue_date","expiry_date","employee_name","days_expired"]
+
+    st.dataframe(df_cert_expired[df_show],hide_index=True,column_config={
+        "certificate_name":"證照名稱",
+        "issue_date":"發證日",
+        "expiry_date":"到期日",
+        "employee_name":"員工名稱",
+        "days_expired":"超過天數"
+    })
+    st.divider()
+    #機具維護提醒
+    st.markdown("#### :bell: 機具維護提醒")
+    equipment_maintenance=get_equipment_maintenance()
+
+    df_equipment_maintenance=pd.DataFrame(equipment_maintenance)
+    df_show=["EquipmentID","Name","PurchaseDate","NextMaintenance","days_overdue"]
+    
+    st.dataframe(df_equipment_maintenance[df_show],hide_index=True,column_config={
+        "Name":"機具名稱",
+        "EquipmentID":"機具ID",
+        "PurchaseDate":"購買日期",
+        "NextMaintenance":"下次維護日期",
+        "days_overdue":"超過天數"
+    })
+    st.divider()
+    # #歸還逾期提醒
+    # st.markdown("#### :bell: 借用逾期提醒")
+    # st.divider()
+    # #出勤異常提醒
+    # st.markdown("#### :bell: 出勤異常提醒")
+
 
 with tab2:
-    # st.markdown("#### 📝 案件總覽")
     
     # 獲取所有案件
     cases = get_cases()
@@ -183,3 +175,104 @@ with tab2:
         st.warning("目前沒有可用的案件")
     
     st.divider()
+
+with tab3:
+    # 薪資統計部分
+    
+    # 月份選擇器
+    current_year = datetime.datetime.now().year
+    months = [
+        f"{current_year}-{month:02d}" for month in range(1, 13)
+    ]
+    selected_month = st.selectbox("選擇月份", months, index=datetime.datetime.now().month-1)
+    
+    try:
+        # 取得選定月份的出勤資料
+        attendance = get_attendance_by_month(selected_month)
+        
+        if attendance and 'employees' in attendance:
+            # 分析選定月份的天數
+            year, month = map(int, selected_month.split('-'))
+            _, last_day = calendar.monthrange(year, month)
+            days_in_month = list(range(1, last_day + 1))
+            
+            # 創建日期欄位
+            columns = ["姓名/日期"] + [str(day) for day in days_in_month] + ["合計"]
+            
+            # 創建表格資料
+            table_data = []
+            
+            # 將每位員工的出勤資料轉換為表格格式
+            for emp in attendance['employees']:
+                row = [emp['name']]  # 第一欄是員工姓名
+                
+                # 建立日期對應的工時字典
+                hours_by_day = {}
+                for record in emp['daily_records']:
+                    day = int(record['date'].split('-')[2])  # 取出日期中的「日」
+                    hours_by_day[day] = record['hours']
+                
+                # 填充每一天的工時
+                for day in days_in_month:
+                    hours = hours_by_day.get(day, 0)
+                    # 如果工時大於0，顯示工時值，否則顯示空白
+                    row.append(hours if hours > 0 else "")
+                
+                # 最後一欄是總計
+                row.append(str(emp['total_hours']))
+                
+                table_data.append(row)
+            
+            # 添加合計行
+            total_row = ["合計"]
+            for day in days_in_month:
+                # 計算每一天的工時總和
+                day_total = 0
+                for emp in table_data:
+                    day_index = day  # 日期對應的索引
+                    if day_index < len(emp) and emp[day_index] != "":
+                        day_total += float(emp[day_index])
+                
+                total_row.append(day_total if day_total > 0 else "")
+            
+            # 最後一格是所有員工總工時
+            grand_total = sum(float(emp[-1]) for emp in table_data if emp[-1] != "")
+            total_row.append(grand_total)
+            
+            table_data.append(total_row)
+            
+            # 創建 DataFrame 並顯示
+            df = pd.DataFrame(table_data, columns=columns)
+            
+            # 顯示表格
+            st.markdown(f"### {selected_month} 月份員工出勤表")
+            st.dataframe(df, hide_index=True, use_container_width=True)
+            
+            if st.button("列印薪資單",type="primary"):
+                pass
+
+            # 顯示摘要統計
+            # st.markdown("### 出勤摘要統計")
+            
+            # summary_data = []
+            # for emp in attendance['employees']:
+            #     # 計算出勤天數 (工時 > 0 的天數)
+            #     work_days = sum(1 for day in emp['daily_records'] if day['hours'] > 0)
+                
+            #     summary_data.append({
+            #         "員工姓名": emp['name'],
+            #         "總工時": emp['total_hours'],
+            #         "出勤天數": work_days,
+            #         "換算天數": emp['days_equivalent']
+            #     })
+            
+            # # 顯示摘要資料
+            # df_summary = pd.DataFrame(summary_data)
+            # st.dataframe(df_summary, hide_index=True, use_container_width=True)
+            
+        else:
+            st.info(f"{selected_month} 月份沒有出勤資料")
+    except Exception as e:
+        st.error(f"取得資料時發生錯誤: {str(e)}")
+
+
