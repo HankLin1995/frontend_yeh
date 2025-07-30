@@ -63,8 +63,8 @@ def display_case_overview(case_id):
         df_attendances = pd.DataFrame(case_stats['Attendances'])
 
         # 轉換日期時間格式
-        df_attendances['ClockInTime'] = pd.to_datetime(df_attendances['ClockInTime'])
-        df_attendances['ClockOutTime'] = pd.to_datetime(df_attendances['ClockOutTime'])
+        df_attendances['ClockInTime'] = pd.to_datetime(df_attendances['ClockInTime'], format='ISO8601')
+        df_attendances['ClockOutTime'] = pd.to_datetime(df_attendances['ClockOutTime'], format='ISO8601')
         
         # 添加日期列以便分組
         df_attendances['Date'] = df_attendances['ClockInTime'].dt.date
@@ -122,32 +122,36 @@ with tab1:
     st.markdown("#### :bell: 證照到期提醒")
 
     cert_expired=get_cert_expired()
-    df_cert_expired=pd.DataFrame(cert_expired)
 
-    df_show=["certificate_name","issue_date","expiry_date","employee_name","days_expired"]
+    if cert_expired:
+        
+        df_cert_expired=pd.DataFrame(cert_expired)
 
-    st.dataframe(df_cert_expired[df_show],hide_index=True,column_config={
-        "certificate_name":"證照名稱",
-        "issue_date":"發證日",
-        "expiry_date":"到期日",
-        "employee_name":"員工名稱",
-        "days_expired":"超過天數"
-    })
+        df_show=["certificate_name","issue_date","expiry_date","employee_name","days_expired"]
+
+        st.dataframe(df_cert_expired[df_show],hide_index=True,column_config={
+            "certificate_name":"證照名稱",
+            "issue_date":"發證日",
+            "expiry_date":"到期日",
+            "employee_name":"員工名稱",
+            "days_expired":"超過天數"
+        })
     st.divider()
     #機具維護提醒
     st.markdown("#### :bell: 機具維護提醒")
     equipment_maintenance=get_equipment_maintenance()
 
-    df_equipment_maintenance=pd.DataFrame(equipment_maintenance)
-    df_show=["EquipmentID","Name","PurchaseDate","NextMaintenance","days_overdue"]
-    
-    st.dataframe(df_equipment_maintenance[df_show],hide_index=True,column_config={
-        "Name":"機具名稱",
-        "EquipmentID":"機具ID",
-        "PurchaseDate":"購買日期",
-        "NextMaintenance":"下次維護日期",
+    if equipment_maintenance:
+        df_equipment_maintenance=pd.DataFrame(equipment_maintenance)
+        df_show=["EquipmentID","Name","PurchaseDate","NextMaintenance","days_overdue"]
+        
+        st.dataframe(df_equipment_maintenance[df_show],hide_index=True,column_config={
+            "Name":"機具名稱",
+            "EquipmentID":"機具ID",
+            "PurchaseDate":"購買日期",
+            "NextMaintenance":"下次維護日期",
         "days_overdue":"超過天數"
-    })
+        })
     st.divider()
     # #歸還逾期提醒
     # st.markdown("#### :bell: 借用逾期提醒")
@@ -274,5 +278,3 @@ with tab3:
             st.info(f"{selected_month} 月份沒有出勤資料")
     except Exception as e:
         st.error(f"取得資料時發生錯誤: {str(e)}")
-
-
