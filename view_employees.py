@@ -65,7 +65,8 @@ from api import (
     get_cases,
     get_material_borrow_logs,
     get_leave_requests,
-    update_certificate
+    update_certificate,
+    update_work_hours
 )
 
 def format_hours_minutes(hours_float):
@@ -248,6 +249,15 @@ def create_certificate_ui(employee_id):
             expiry_date=expiry_date if expiry_date else None
         )
         st.success("證照資料已新增！請重新整理頁面。")
+        st.rerun()
+
+@st.dialog("調整工時")
+def edit_attendance_ui(attendance_id):
+    new_work_hours=st.number_input("輸入工時",min_value=0.0,max_value=24.0,value=8.0)
+    if st.button("確認"):
+        resp=update_work_hours(attendance_id,new_work_hours)
+        st.success("工時已更新！")
+        st.write(resp)
         st.rerun()
 
 def display_certificates_table_view(employee_id):
@@ -521,6 +531,8 @@ with tab4:
 
     df_attendance=pd.DataFrame(data)
 
+    # st.write(df_attendance)
+
     df_cases=pd.DataFrame(get_cases())
 
     if df_attendance.empty:
@@ -559,37 +571,37 @@ with tab4:
         df_attendance['ClockOutTime_calc'] = pd.to_datetime(df_attendance['ClockOutTime'])
         
         # 建立工時計算函數，依照規則：早上 7:30 前到，下午 4:30 後走，算一天（8 小時）
-        def calculate_work_hours(row):
-            # 獲取打卡日期的年月日
-            date = row['ClockInTime_calc'].date()
+        # def calculate_work_hours(row):
+        #     # 獲取打卡日期的年月日
+        #     date = row['ClockInTime_calc'].date()
             
-            # 設定標準上下班時間點
-            standard_start = pd.Timestamp(datetime.datetime.combine(date, datetime.time(7, 30, 0)))
-            standard_end = pd.Timestamp(datetime.datetime.combine(date, datetime.time(16, 30, 0)))
+        #     # 設定標準上下班時間點
+        #     standard_start = pd.Timestamp(datetime.datetime.combine(date, datetime.time(7, 30, 0)))
+        #     standard_end = pd.Timestamp(datetime.datetime.combine(date, datetime.time(16, 30, 0)))
             
-            # 實際打卡時間
-            actual_start = row['ClockInTime_calc']
-            actual_end = row['ClockOutTime_calc']
+        #     # 實際打卡時間
+        #     actual_start = row['ClockInTime_calc']
+        #     actual_end = row['ClockOutTime_calc']
             
-            # 如果早上 7:30 前到，以 7:30 計算
-            effective_start = standard_start if actual_start < standard_start else actual_start
+        #     # 如果早上 7:30 前到，以 7:30 計算
+        #     effective_start = standard_start if actual_start < standard_start else actual_start
             
-            # 如果下午 4:30 後走，以 4:30 計算
-            effective_end = standard_end if actual_end > standard_end else actual_end
+        #     # 如果下午 4:30 後走，以 4:30 計算
+        #     effective_end = standard_end if actual_end > standard_end else actual_end
             
-            # 如果符合規則（早到晚走），直接給 8 小時
-            if actual_start <= standard_start and actual_end >= standard_end:
-                return 8.0
+        #     # 如果符合規則（早到晚走），直接給 8 小時
+        #     if actual_start <= standard_start and actual_end >= standard_end:
+        #         return 8.0
             
-            # 其他情況，計算實際工時
-            hours = (effective_end - effective_start).total_seconds() / 3600
-            return round(hours, 4)
+        #     # 其他情況，計算實際工時
+        #     hours = (effective_end - effective_start).total_seconds() / 3600
+        #     return round(hours, 4)
         
-        # 應用工時計算函數
-        df_attendance['WorkHours'] = df_attendance.apply(calculate_work_hours, axis=1)
+        # # 應用工時計算函數
+        # df_attendance['WorkHours'] = df_attendance.apply(calculate_work_hours, axis=1)
         
-        # 格式化工時顯示
-        df_attendance['WorkHours'] = df_attendance['WorkHours'].apply(format_hours_minutes)
+        # # 格式化工時顯示
+        # df_attendance['WorkHours'] = df_attendance['WorkHours'].apply(format_hours_minutes)
 
 
         # with st.sidebar:
@@ -599,7 +611,7 @@ with tab4:
         col1,col2,col3=st.columns([1,1,1])
 
         with col1:
-            show_type=st.selectbox("顯示方式",options=["日曆","表格"])
+            show_type=st.selectbox("顯示方式",options=["表格","日曆"])
 
         with col2:
             year=st.selectbox("年份",options=df_attendance['ClockInTime_calc'].dt.year.unique())
@@ -616,9 +628,9 @@ with tab4:
 
         else:
 
-            st.dataframe(df_attendance,hide_index=True,column_config={
+            event=st.dataframe(df_attendance,hide_index=True,column_config={
                 "UserID":None,
-                "AttendanceID":None,
+                "AttendanceID":st.column_config.TextColumn("打卡ID",),
                 "CaseID":st.column_config.TextColumn("案件",),
                 "ClockInTime":st.column_config.TextColumn("上班時間"),
                 "ClockOutTime":st.column_config.TextColumn("下班時間"),
@@ -627,13 +639,22 @@ with tab4:
                 "IsTrained":"是否訓練",
                 "ClockInTime_calc":None,
                 "ClockOutTime_calc":None,
-                "WorkHours":st.column_config.TextColumn("工時")
-            })
+                "WorkHours":st.column_config.TextColumn("工時"),
+                "name":None
+            },
+            selection_mode="single-row",
+            on_select="rerun"
+            )
 
-        # # 薪資單功能
-        # if st.button("列印薪資單", type="primary"):
+            select_users = event.selection.rows
+            filtered_df = df_attendance.iloc[select_users]
 
-        #     get_salary_report(employee['id'],month)
+            if filtered_df.empty:
+                pass
+            else:
+                if st.button("調整工時"):
+                    edit_attendance_ui(filtered_df['AttendanceID'].iloc[0])
+
 
 with tab5:
     df_leaves=pd.DataFrame(get_leave_requests(user_id=selected_user['UserID']))

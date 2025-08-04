@@ -348,6 +348,11 @@ def get_attendance_by_month(month):
     resp.raise_for_status()
     return resp.json()
 
+def update_work_hours(attendance_id, work_hours):
+    resp = requests.put(f"{BASE_URL}/attendance/{attendance_id}/work-hours/{work_hours}")
+    resp.raise_for_status()
+    return resp.json()
+
 # ====== 工作日誌 ======
 
 def get_worklogs(skip=0, limit=100):
