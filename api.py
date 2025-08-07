@@ -371,6 +371,11 @@ def get_worklogs_by_user_id(user_id,work_date):
     resp.raise_for_status()
     return resp.json()
 
+def get_worklogs_by_case_id(case_id):
+    resp = requests.get(f"{BASE_URL}/worklogs/?case_id={case_id}")
+    resp.raise_for_status()
+    return resp.json()
+
 def create_worklog(data):
     resp = requests.post(f"{BASE_URL}/worklogs", json=data)
     resp.raise_for_status()

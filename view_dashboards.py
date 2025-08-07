@@ -2,7 +2,130 @@ import streamlit as st
 import pandas as pd
 import datetime
 import calendar
-from api import get_cert_expired, get_cases, get_case_statistics, get_equipment_maintenance, get_attendance_by_month
+import io
+from api import get_cert_expired, get_cases, get_case_statistics, get_equipment_maintenance, get_attendance_by_month,get_worklogs_by_case_id
+
+def export_salary_to_excel(attendance, month):
+    """
+    將薪資資料輸出為Excel檔案
+    
+    Args:
+        attendance: 出勤資料
+        month: 月份
+        
+    Returns:
+        bytes: Excel檔案的二進位資料
+    """
+    # 確保必要的套件
+    import pandas as pd
+    import io
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, Alignment, PatternFill
+    
+    # 解析月份
+    year, month_num = map(int, month.split('-'))
+    _, last_day = calendar.monthrange(year, month_num)
+    days_in_month = list(range(1, last_day + 1))
+    
+    # 創建日期欄位
+    columns = ["姓名/日期"] + [str(day) for day in days_in_month] + ["合計"]
+    
+    # 創建表格資料
+    table_data = []
+    
+    # 將每位員工的出勤資料轉換為表格格式
+    for emp in attendance['employees']:
+        row = [emp['name']]  # 第一欄是員工姓名
+        
+        # 建立日期對應的工時字典
+        hours_by_day = {}
+        for record in emp['daily_records']:
+            day = int(record['date'].split('-')[2])  # 取出日期中的「日」
+            hours_by_day[day] = record['hours']
+        
+        # 填充每一天的工時
+        for day in days_in_month:
+            hours = hours_by_day.get(day, 0)
+            # 如果工時大於0，顯示工時值，否則顯示空白
+            row.append(hours if hours > 0 else "")
+        
+        # 最後一欄是總計
+        row.append(emp['total_hours'])
+        
+        table_data.append(row)
+    
+    # 添加合計行
+    total_row = ["合計"]
+    for day in days_in_month:
+        # 計算每一天的工時總和
+        day_total = 0
+        for emp in table_data:
+            day_index = day  # 日期對應的索引
+            if day_index < len(emp) and emp[day_index] != "":
+                day_total += float(emp[day_index])
+        
+        total_row.append(day_total if day_total > 0 else "")
+    
+    # 最後一格是所有員工總工時
+    grand_total = sum(float(emp[-1]) for emp in table_data if emp[-1] != "")
+    total_row.append(grand_total)
+    
+    table_data.append(total_row)
+    
+    # 創建 DataFrame
+    df = pd.DataFrame(table_data, columns=columns)
+    
+    # 創建 Excel 檔案
+    output = io.BytesIO()
+    
+    try:
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # 將資料輸出到Excel
+            df.to_excel(writer, sheet_name=f'{month}月薪資單', index=False)
+            
+            # 取得工作表以進行格式設定
+            workbook = writer.book
+            worksheet = writer.sheets[f'{month}月薪資單']
+            
+            # 設定欄位寬度
+            for i, column in enumerate(df.columns):
+                column_letter = get_column_letter(i + 1)
+                if i == 0:  # 姓名欄位
+                    worksheet.column_dimensions[column_letter].width = 15
+                elif i == len(df.columns) - 1:  # 合計欄位
+                    worksheet.column_dimensions[column_letter].width = 10
+                else:  # 日期欄位
+                    worksheet.column_dimensions[column_letter].width = 4
+            
+            # 設定標題列格式
+            header_font = Font(bold=True)
+            header_fill = PatternFill(start_color='E6E6E6', end_color='E6E6E6', fill_type='solid')
+            header_alignment = Alignment(horizontal='center')
+            
+            for cell in worksheet[1]:
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = header_alignment
+            
+            # 設定合計行格式
+            total_row_num = len(table_data) + 1  # +1 因為Excel的行從1開始，且有標題行
+            for cell in worksheet[total_row_num]:
+                cell.font = Font(bold=True)
+            
+            # 設定數值格式
+            for row in worksheet.iter_rows(min_row=2, max_row=total_row_num):
+                for cell in row:
+                    if cell.value not in ["", None] and isinstance(cell.value, (int, float)):
+                        cell.number_format = '0.0'
+    except Exception as e:
+        # 輸出錯誤訊息以協助除錯
+        st.error(f"創建 Excel 檔案時發生錯誤: {str(e)}")
+        # 返回空的二進位資料
+        return io.BytesIO().getvalue()
+    
+    # 重置指針位置並返回
+    output.seek(0)
+    return output.getvalue()
 
 def display_case_overview(case_id):
     """
@@ -23,10 +146,9 @@ def display_case_overview(case_id):
     # 材料成本
     material_cost = case_stats['TotalMaterialCost']
     
-    # 計算人力成本 (假設每小時人力成本為 250 元)
-    hourly_rate = 250  # 每小時人力成本
-    labor_cost = case_stats['TotalWorkHours'] * hourly_rate
-    
+    # 人力成本
+    labor_cost = case_stats['TotalLaborCost']
+
     # 計算總成本
     total_cost = material_cost + labor_cost
     
@@ -38,7 +160,7 @@ def display_case_overview(case_id):
         st.metric("總成本", f"${total_cost:,}")
     
     # 顯示材料成本明細
-    st.markdown("#### 📦 材料成本明細")
+    st.markdown("#### 📦 材料明細")
     if case_stats['Materials']:
         df_materials = pd.DataFrame(case_stats['Materials'])
         st.dataframe(
@@ -58,7 +180,8 @@ def display_case_overview(case_id):
         st.info("此案件尚未使用任何材料")
     
     # 顯示人力工時明細
-    st.markdown("#### 👷 人力工時明細")
+    st.markdown("#### 👷 工時明細")
+    
     if case_stats['Attendances']:
         df_attendances = pd.DataFrame(case_stats['Attendances'])
 
@@ -114,6 +237,17 @@ def display_case_overview(case_id):
         #     )
     else:
         st.info("此案件尚未有打卡記錄")
+
+    # 顯示施工日誌內容
+    st.markdown("#### 📝 施工日誌")
+    worklogs=get_worklogs_by_case_id(case_id)
+    
+    st.dataframe(worklogs,hide_index=True,column_config={
+        "UserName":"員工名稱",
+        "Content":"施工內容",
+        "Progress":"進度",
+        "LogTime":"時間"
+        })
 
 tab1, tab2, tab3 = st.tabs(["⏰ 時效控制", "📊 案件總覽","👥 員工總覽"])
 
@@ -253,7 +387,16 @@ with tab3:
             st.dataframe(df, hide_index=True, use_container_width=True)
             
             if st.button("列印薪資單",type="primary"):
-                pass
+                # 建立 Excel 檔案
+                excel_file = export_salary_to_excel(attendance, selected_month)
+                
+                # 提供下載連結
+                st.download_button(
+                    label="下載薪資單 Excel 檔案",
+                    data=excel_file,
+                    file_name=f"薪資單_{selected_month}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
             # 顯示摘要統計
             # st.markdown("### 出勤摘要統計")
