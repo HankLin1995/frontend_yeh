@@ -23,7 +23,11 @@ from api import (
     get_leave_requests,
     get_leave_request,
     get_leave_balance,
-    get_user_leave_entitlements
+    get_user_leave_entitlements,
+    get_equipments,
+    get_equipment_detail,
+    create_equipment_borrow_log,
+    get_equipment_borrow_logs
 )
 from PIL import Image
 import pandas as pd
@@ -439,10 +443,200 @@ def material_return_page():
 
 
 
+def get_equipment_id(key_suffix=""):
+    """獲取機具 ID 的函數
+    
+    Args:
+        key_suffix: 用於區分不同頁面的元素的後綴
+    """
+    import os
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    TEST_MODE = os.getenv("TEST_MODE")
+
+    if TEST_MODE == "True":
+        equipments = get_equipments()
+        equipment_options = {equipment["EquipmentID"]: equipment["Name"] for equipment in equipments}
+        equipment_id = st.selectbox(
+            "機具", 
+            options=list(equipment_options.keys()), 
+            format_func=lambda x: equipment_options.get(x, x),
+            key=f"equipment_select_{key_suffix}"
+        )
+        return equipment_id
+    else:
+        from utils_qrcode import process_image
+        file = st.camera_input(
+            "📸 拍照掃描QR碼", 
+            key=f"equipment_camera_{key_suffix}"
+        )
+
+        if file is not None:
+            results, gray, binary = process_image(Image.open(file))
+            
+            if results:
+                for i, result in enumerate(results, 1):
+                    st.success(f"成功掃描 QR 碼:")
+                    for key, value in result.items():
+                        st.write(f"**{key}:** {value}")
+                        if key == "編碼":
+                            equipment_id = value
+                            return equipment_id
+            else:
+                return None
+
+@st.fragment
+def equipment_borrow_page():
+    """機具借用頁面"""
+    with st.container(border=True):
+        st.subheader("機具借用")
+        
+        # 獲取案件列表
+        cases = get_cases()
+        case_options = {case["CaseID"]: case["Name"] for case in cases}
+        selected_case_id = st.selectbox("負責案件", options=list(case_options.keys()), format_func=lambda x: case_options.get(x, x), key="borrow_case")
+        
+        # 獲取機具 ID
+        equipment_id = get_equipment_id(key_suffix="borrow")
+        
+        if equipment_id is None:
+            st.warning("未檢測到QR碼，請調整相機角度和距離")
+            return
+        
+        # 獲取機具詳情
+        try:
+            equipment = get_equipment_detail(equipment_id)
+            if equipment is None:
+                st.warning("未找到該機具")
+                return
+            
+            # 顯示機具資訊
+            st.write(f"**機具名稱:** {equipment['Name']}")
+            st.write(f"**機具狀態:** {equipment['Status']}")
+            
+            # 檢查機具是否可借用
+            if equipment['Status'] != "可用":
+                st.error(f"該機具目前狀態為 {equipment['Status']}，不可借用")
+                return
+            
+            # 借用數量
+            quantity = st.number_input("借用數量", min_value=1, value=1, step=1)
+            
+            # 備註
+            note = st.text_area("備註說明", placeholder="請輸入借用用途或其他說明...")
+            
+            # 提交按鈕
+            if st.button("確認借用", type="primary", use_container_width=True):
+                # 準備資料
+                data = {
+                    "EquipmentID": equipment_id,
+                    "UserID": st.session_state.user_id,
+                    "CaseID": selected_case_id,
+                    "ActionType": "借用",
+                    "Quantity": quantity,
+                    "Note": note
+                }
+                
+                try:
+                    # 呼叫 API 進行借用
+                    result = create_equipment_borrow_log(data)
+                    if "LogID" in result:
+                        st.success(f"借用成功！記錄編號: {result['LogID']}")
+                        time.sleep(2)
+                        st.rerun()
+                except Exception as e:
+                    st.error(f"借用失敗: {str(e)}")
+        except Exception as e:
+            st.error(f"獲取機具資訊失敗: {str(e)}")
+
+@st.fragment
+def equipment_return_page():
+    """機具歸還頁面"""
+    st.subheader("機具歸還")
+    
+    # 獲取機具 ID
+    equipment_id = get_equipment_id(key_suffix="return")
+    
+    if equipment_id is None:
+        st.warning("未檢測到QR碼，請調整相機角度和距離")
+        return
+    
+    try:
+        # 獲取機具詳情
+        equipment = get_equipment_detail(equipment_id)
+        if equipment is None:
+            st.warning("未找到該機具")
+            return
+        
+        # 顯示機具資訊
+        st.write(f"**機具名稱:** {equipment['Name']}")
+        st.write(f"**機具狀態:** {equipment['Status']}")
+        
+        # 檢查機具是否已被借出
+        if equipment['Status'] != "借出中":
+            st.error(f"該機具目前狀態為 {equipment['Status']}，不需歸還")
+            return
+        
+        # 獲取該機具的借用記錄
+        borrow_logs = get_equipment_borrow_logs(equipment_id)
+        
+        # 篩選出最近的借用記錄（未歸還的）
+        active_borrow = None
+        for log in borrow_logs:
+            if log["ActionType"] == "借用" and log["UserID"] == st.session_state.user_id:
+                active_borrow = log
+                break
+        
+        if not active_borrow:
+            st.warning("找不到您的借用記錄，無法歸還")
+            return
+        
+        # 顯示借用資訊
+        st.write(f"**借用時間:** {active_borrow['ActionTime']}")
+        st.write(f"**借用數量:** {active_borrow['Quantity']}")
+        if active_borrow.get('Note'):
+            st.write(f"**借用備註:** {active_borrow['Note']}")
+        
+        # 歸還數量
+        quantity = st.number_input("歸還數量", min_value=1, value=active_borrow['Quantity'], max_value=active_borrow['Quantity'], step=1)
+        
+        # 備註
+        note = st.text_area("歸還備註", placeholder="請輸入機具狀況或其他說明...")
+        
+        # 提交按鈕
+        if st.button("確認歸還", type="primary", use_container_width=True):
+            # 準備資料
+            data = {
+                "EquipmentID": equipment_id,
+                "UserID": st.session_state.user_id,
+                "CaseID": active_borrow.get('CaseID'),
+                "ActionType": "歸還",
+                "Quantity": quantity,
+                "Note": note
+            }
+            
+            try:
+                # 呼叫 API 進行歸還
+                result = create_equipment_borrow_log(data)
+                if "LogID" in result:
+                    st.success(f"歸還成功！記錄編號: {result['LogID']}")
+                    time.sleep(2)
+                    st.rerun()
+            except Exception as e:
+                st.error(f"歸還失敗: {str(e)}")
+    except Exception as e:
+        st.error(f"獲取機具資訊失敗: {str(e)}")
+
 def equipment_page():
-    st.title("設備借用歸還")
-    st.write("這是設備借用歸還頁面")
-    # 這裡可以添加設備借用歸還的相關功能
+    """設備借用歸還頁面"""
+    tab1, tab2 = st.tabs(["機具借用", "機具歸還"])
+    
+    with tab1:
+        equipment_borrow_page()
+    
+    with tab2:
+        equipment_return_page()
 
 # @st.fragment
 def leave_request_page():
@@ -592,5 +786,4 @@ elif myradio=="材料歸還":
 elif myradio=="設備借用":
     equipment_page()
 elif myradio=="設備歸還":
-    pass
-    # equipment_return_page()
+    equipment_page()
