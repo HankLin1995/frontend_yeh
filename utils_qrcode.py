@@ -52,13 +52,48 @@ def generate_qrcode(code, name, spec, unit, output_dir):
         # 將QR碼轉換為PIL圖像
         qr_image = qr_image.convert('RGB')
         
-        # 使用默認字體
+        # 使用專案目錄中的中文字體
         try:
-            # 嘗試使用微軟正黑體（如果系統中有的話）
-            info_font = ImageFont.truetype("msjh.ttc", 30)  # 信息文字字體
-        except:
-            # 如果沒有找到指定字體，使用默認字體
+            # 嘗試載入專案目錄中的字體檔案
+            font_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts', 'NotoSansCJK-Regular.ttc')
+            
+            # 如果專案目錄中的字體檔案不存在，則嘗試創建字體目錄並提示用戶
+            if not os.path.exists(font_path):
+                font_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
+                if not os.path.exists(font_dir):
+                    os.makedirs(font_dir, exist_ok=True)
+                print(f"警告：未找到字體檔案，請將 NotoSansCJK-Regular.ttc 放置於 {font_dir} 目錄")
+                
+                # 嘗試使用系統字體作為備用
+                system_fonts = [
+                    # Windows 字體
+                    "msjh.ttc",                     # 微軟正黑體
+                    "C:/Windows/Fonts/msjh.ttc",    # 微軟正黑體完整路徑
+                    # Linux 字體
+                    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+                    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                    # macOS 字體
+                    "/System/Library/Fonts/PingFang.ttc"
+                ]
+                
+                for system_font in system_fonts:
+                    try:
+                        info_font = ImageFont.truetype(system_font, 30)
+                        print(f"使用系統字體: {system_font}")
+                        break
+                    except:
+                        continue
+                else:
+                    # 如果所有系統字體都無法載入，使用默認字體
+                    info_font = ImageFont.load_default()
+                    print("警告：未找到支援中文的字體，文字可能無法正確顯示")
+            else:
+                # 使用專案目錄中的字體
+                info_font = ImageFont.truetype(font_path, 30)
+        except Exception as e:
+            # 如果發生任何錯誤，使用默認字體
             info_font = ImageFont.load_default()
+            print(f"載入字體時發生錯誤: {str(e)}")
         
         # 準備要顯示的文字
         info_text = f"編碼:{code}\n品名:{name}\n規格:{spec}\n單位:{unit}"

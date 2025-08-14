@@ -4,7 +4,7 @@ import requests
 import os
 from api import create_user, get_user
 
-VERSION_NUMBER = "V2.6.0"
+VERSION_NUMBER = "V2.6.1"
 
 st.set_page_config(page_title=f"均嘉ERP系統{VERSION_NUMBER}", page_icon="🏚️", layout="wide")
 st.logo("./static/BANNER-removebg-preview.png")

@@ -628,15 +628,15 @@ def equipment_return_page():
     except Exception as e:
         st.error(f"獲取機具資訊失敗: {str(e)}")
 
-def equipment_page():
-    """設備借用歸還頁面"""
-    tab1, tab2 = st.tabs(["機具借用", "機具歸還"])
+# def equipment_page():
+#     """設備借用歸還頁面"""
+#     tab1, tab2 = st.tabs(["機具借用", "機具歸還"])
     
-    with tab1:
-        equipment_borrow_page()
+#     with tab1:
+#         equipment_borrow_page()
     
-    with tab2:
-        equipment_return_page()
+#     with tab2:
+#         equipment_return_page()
 
 # @st.fragment
 def leave_request_page():
@@ -784,6 +784,6 @@ elif myradio=="材料借用":
 elif myradio=="材料歸還":
     material_return_page()
 elif myradio=="設備借用":
-    equipment_page()
+    equipment_borrow_page()
 elif myradio=="設備歸還":
-    equipment_page()
+    equipment_return_page()

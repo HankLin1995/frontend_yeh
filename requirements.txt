@@ -7,3 +7,6 @@ pyzbar
 opencv-python-headless
 plotly
 
+# 注意：在 Linux 環境中需要中文字體支援
+# 請將 NotoSansCJK-Regular.ttc 字體檔案放置於專案的 fonts 目錄下
+# 字體下載: https://github.com/googlefonts/noto-cjk/releases
