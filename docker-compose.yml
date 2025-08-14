@@ -17,6 +17,7 @@ services:
     command: tunnel --no-autoupdate run --token ${CLOUDFLARED_TUNNEL_TOKEN}
     networks:
       - st_erp_network
+    restart: unless-stopped
 
 networks:
   st_erp_network:
