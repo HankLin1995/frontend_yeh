@@ -298,6 +298,23 @@ def get_equipment_borrow_logs(equipment_id, skip=0, limit=100):
     resp.raise_for_status()
     return resp.json()
 
+def get_user_equipment_borrow_logs(user_id, skip=0, limit=100):
+    """
+    獲取用戶的機具借用記錄
+    
+    Args:
+        user_id: 用戶ID
+        skip: 跳過的記錄數
+        limit: 返回的最大記錄數
+        
+    Returns:
+        list: 包含用戶機具借用記錄的列表
+    """
+    params = {"skip": skip, "limit": limit}
+    resp = requests.get(f"{BASE_URL}/equipments/borrow/user/{user_id}", params=params)
+    resp.raise_for_status()
+    return resp.json()
+
 # 薪資
 
 def get_salaries(employee_id):

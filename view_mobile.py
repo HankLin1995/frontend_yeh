@@ -27,7 +27,7 @@ from api import (
     get_equipments,
     get_equipment_detail,
     create_equipment_borrow_log,
-    get_equipment_borrow_logs
+    get_user_equipment_borrow_logs
 )
 from PIL import Image
 import pandas as pd
@@ -552,81 +552,86 @@ def equipment_borrow_page():
 
 @st.fragment
 def equipment_return_page():
-    """機具歸還頁面"""
+    """機具歸還頁面 - 顯示用戶所有借用的機具列表"""
     st.subheader("機具歸還")
     
-    # 獲取機具 ID
-    equipment_id = get_equipment_id(key_suffix="return")
-    
-    if equipment_id is None:
-        st.warning("未檢測到QR碼，請調整相機角度和距離")
-        return
-    
+    # 獲取用戶借用的機具記錄
     try:
-        # 獲取機具詳情
-        equipment = get_equipment_detail(equipment_id)
-        if equipment is None:
-            st.warning("未找到該機具")
+        borrow_logs = get_user_equipment_borrow_logs(st.session_state.user_id)
+        
+        if not borrow_logs:
+            st.info("您目前沒有需要歸還的機具")
             return
-        
-        # 顯示機具資訊
-        st.write(f"**機具名稱:** {equipment['Name']}")
-        st.write(f"**機具狀態:** {equipment['Status']}")
-        
-        # 檢查機具是否已被借出
-        if equipment['Status'] != "借出中":
-            st.error(f"該機具目前狀態為 {equipment['Status']}，不需歸還")
-            return
-        
-        # 獲取該機具的借用記錄
-        borrow_logs = get_equipment_borrow_logs(equipment_id)
-        
-        # 篩選出最近的借用記錄（未歸還的）
-        active_borrow = None
-        for log in borrow_logs:
-            if log["ActionType"] == "借用" and log["UserID"] == st.session_state.user_id:
-                active_borrow = log
-                break
-        
-        if not active_borrow:
-            st.warning("找不到您的借用記錄，無法歸還")
-            return
-        
-        # 顯示借用資訊
-        st.write(f"**借用時間:** {active_borrow['ActionTime']}")
-        st.write(f"**借用數量:** {active_borrow['Quantity']}")
-        if active_borrow.get('Note'):
-            st.write(f"**借用備註:** {active_borrow['Note']}")
-        
-        # 歸還數量
-        quantity = st.number_input("歸還數量", min_value=1, value=active_borrow['Quantity'], max_value=active_borrow['Quantity'], step=1)
-        
-        # 備註
-        note = st.text_area("歸還備註", placeholder="請輸入機具狀況或其他說明...")
-        
-        # 提交按鈕
-        if st.button("確認歸還", type="primary", use_container_width=True):
-            # 準備資料
-            data = {
-                "EquipmentID": equipment_id,
-                "UserID": st.session_state.user_id,
-                "CaseID": active_borrow.get('CaseID'),
-                "ActionType": "歸還",
-                "Quantity": quantity,
-                "Note": note
-            }
             
-            try:
-                # 呼叫 API 進行歸還
-                result = create_equipment_borrow_log(data)
-                if "LogID" in result:
-                    st.success(f"歸還成功！記錄編號: {result['LogID']}")
-                    time.sleep(2)
-                    st.rerun()
-            except Exception as e:
-                st.error(f"歸還失敗: {str(e)}")
+        # 轉換為 DataFrame 方便處理
+        df_borrow = pd.DataFrame(borrow_logs)
+        
+        # 處理日期時間格式
+        if 'ActionTime' in df_borrow.columns:
+            df_borrow["ActionTime"] = pd.to_datetime(df_borrow["ActionTime"]).dt.strftime("%Y-%m-%d %H:%M:%S")
+        
+        # 篩選出未歸還的記錄（借用類型）
+        df_borrow = df_borrow[df_borrow['ActionType'] == "借用"]
+        
+        if df_borrow.empty:
+            st.info("您目前沒有需要歸還的機具")
+            return
+        
+        # 顯示每一筆借用記錄
+        for index, borrow in df_borrow.iterrows():
+            with st.container(border=True):
+                # 主標題 - 編號
+                st.markdown(f"**📄 記錄編號:** `{borrow['LogID']}`")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown(f"**🔧 機具名稱:** {borrow['EquipmentName']}")
+                    if 'case_name' in borrow and borrow['case_name']:
+                        st.markdown(f"**📁 案件:** {borrow['case_name']}")
+                
+                with col2:
+                    st.markdown(f"**📦 借用數量:** {borrow['Quantity']}")
+                    st.markdown(f"**⏰ 借用時間:** {borrow['ActionTime']}")
+                
+                if 'Note' in borrow and borrow['Note']:
+                    st.markdown(f"**📝 借用備註:** {borrow['Note']}")
+                
+                # 歸還備註
+                note = st.text_area("歸還備註", 
+                                  placeholder="請輸入機具狀況或其他說明...", 
+                                  key=f"return_note_{borrow['LogID']}")
+                
+                # 提交按鈕
+                if st.button("確認歸還", 
+                           type="primary", 
+                           use_container_width=True, 
+                           key=f"return_button_{borrow['LogID']}"):
+                    # 準備資料
+                    data = {
+                        "EquipmentID": borrow['EquipmentID'],
+                        "UserID": st.session_state.user_id,
+                        "ActionType": "歸還",
+                        "Quantity": 1,  # 機具歸還固定為 1
+                        "Note": note
+                    }
+                    
+                    # 如果有案件 ID，加入資料
+                    if 'CaseID' in borrow and borrow['CaseID']:
+                        data["CaseID"] = borrow['CaseID']
+                    
+                    try:
+                        # 呼叫 API 進行歸還
+                        result = create_equipment_borrow_log(data)
+                        if "LogID" in result:
+                            st.success(f"歸還成功！記錄編號: {result['LogID']}")
+                            time.sleep(2)
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"歸還失敗: {str(e)}")
     except Exception as e:
         st.error(f"獲取機具資訊失敗: {str(e)}")
+
 
 # def equipment_page():
 #     """設備借用歸還頁面"""
@@ -770,7 +775,7 @@ def leave_request_page():
 
 with st.container(border=True):
     # myradio=st.radio("選擇功能",("打卡","材料借用","材料歸還","設備借用","設備歸還"),horizontal=True)
-    myradio=st.selectbox("選擇功能",("打卡簽到","材料借用","材料歸還","設備借用","設備歸還","請假申請"))
+    myradio=st.selectbox("選擇功能",("打卡簽到","材料借用","材料歸還","機具借用","機具歸還","請假申請"))
 
 if myradio=="打卡簽到":
     attendance_page()
@@ -783,7 +788,7 @@ elif myradio=="材料借用":
     material_page()
 elif myradio=="材料歸還":
     material_return_page()
-elif myradio=="設備借用":
+elif myradio=="機具借用":
     equipment_borrow_page()
-elif myradio=="設備歸還":
+elif myradio=="機具歸還":
     equipment_return_page()

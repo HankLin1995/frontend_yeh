@@ -94,30 +94,49 @@ def display_equipments(df):
     if filtered_df.empty:
         pass
     else:
-        if st.button("🗑️ 刪除機具"):
-            for index, row in filtered_df.iterrows():
-                delete_equipment(row["EquipmentID"])
-            st.success("機具刪除成功！")
-            st.cache_data.clear()
-            st.rerun()
+        col1, col2, col3 = st.columns(3)
         
-        if st.button("🖨️ 輸出QRCODE"):
-            from utils_qrcode import generate_qrcode
-            #qr_data = f"編碼:{code}|品名:{name}|規格:{spec}|單位:{unit}"
-            for _,row in filtered_df.iterrows():
+        with col1:
+            if st.button("🗑️ 刪除機具", use_container_width=True):
+                for index, row in filtered_df.iterrows():
+                    delete_equipment(row["EquipmentID"])
+                st.success("機具刪除成功！")
+                st.cache_data.clear()
+                st.rerun()
+        
+        with col2:
+            if st.button("🖨️ 輸出QRCODE", use_container_width=True):
+                from utils_qrcode import generate_qrcode, merge_images_to_pdf
+                # 逐筆產生QRCODE
+                for _, row in filtered_df.iterrows():
+                    generate_qrcode(row["EquipmentID"], row["Name"], row["Value"], row["Unit"], "./static/qrcode_equipments")
+                # 合併所有QRCODE為PDF
+                merge_images_to_pdf("./static/qrcode_equipments", "./static/qrcode_equipments.pdf")
+                st.toast("QRCODE輸出成功！")
+                # 側邊欄顯示PDF下載連結
+                with st.sidebar:
+                    with st.container(border=True):
+                        st.markdown("#### QRCODE PDF下載")
+                        try:
+                            with open("./static/qrcode_equipments.pdf", "rb") as pdf_file:
+                                st.download_button(
+                                    label="📄 下載QRCODE PDF",
+                                    data=pdf_file,
+                                    file_name="qrcode_equipments.pdf",
+                                    mime="application/pdf"
+                                )
+                        except Exception as e:
+                            st.warning(f"PDF檔案產生失敗: {e}")
 
-                generate_qrcode(row["EquipmentID"], row["Name"],row["Value"], row["Unit"], "./static/qrcode_equipments")
-
-            st.toast("QRCODE輸出成功！")
-
-        #編輯選擇的機具的下次保養日
-        if st.button("✏️ 編輯下次保養日"):
-            # 只處理選擇的第一個機具
-            if len(filtered_df) > 1:
-                st.warning("一次只能編輯一個機具的保養日")
-            else:
-                equipment = filtered_df.iloc[0]
-                update_equipment_form(equipment)
+        with col3:
+            #編輯選擇的機具的下次保養日
+            if st.button("✏️ 編輯下次保養日", use_container_width=True):
+                # 只處理選擇的第一個機具
+                if len(filtered_df) > 1:
+                    st.warning("一次只能編輯一個機具的保養日")
+                else:
+                    equipment = filtered_df.iloc[0]
+                    update_equipment_form(equipment)
 
 def example_download():
     equipment_example = pd.DataFrame([
@@ -199,7 +218,8 @@ with st.sidebar:
     if st.button("🗂️ 匯入機具"):
         import_equipments()
 
-    if st.button("🖨️ 全部QRCODE列印"):
-        from utils_qrcode import merge_images_to_pdf
-        merge_images_to_pdf("./static/qrcode_equipments", "./static/qrcode_equipments.pdf")
-        st.toast("QRCODE列印PDF成功！")
+    # 註解掉全部QRCODE列印按鈕，改為在選擇機具後列印
+    # if st.button("🖨️ 全部QRCODE列印"):
+    #     from utils_qrcode import merge_images_to_pdf
+    #     merge_images_to_pdf("./static/qrcode_equipments", "./static/qrcode_equipments.pdf")
+    #     st.toast("QRCODE列印PDF成功！")
