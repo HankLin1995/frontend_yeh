@@ -16,6 +16,61 @@ import api
 
 taiwan_tz = pytz.timezone('Asia/Taipei')
 
+@st.dialog("🗑️ 刪除假別配額")
+def delete_entitlements(selected_entitlements):
+    """刪除選中的假別配額"""
+    st.warning("⚠️ 確定要刪除以下假別配額嗎？此操作無法復原！")
+    
+    # 顯示要刪除的配額
+    display_df = selected_entitlements[["name", "AnnualSpecialLeave", "PersonalLeave", "SickLeave"]]
+    display_df.columns = ["員工姓名", "特別休假", "事假", "病假"]
+    st.dataframe(display_df, hide_index=True)
+    
+    st.markdown("---")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("✅ 確認刪除", type="primary"):
+            success_count = 0
+            error_count = 0
+            
+            # 顯示進度條
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            total_items = len(selected_entitlements)
+            
+            for index, (_, row) in enumerate(selected_entitlements.iterrows()):
+                try:
+                    entitlement_id = row["EntitlementID"]
+                    status_text.text(f"正在刪除 {row['name']} 的假別配額...")
+                    
+                    # 調用刪除 API
+                    api.delete_leave_entitlement(entitlement_id)
+                    success_count += 1
+                    
+                except Exception as e:
+                    st.error(f"刪除 {row['name']} 的假別配額失敗: {str(e)}")
+                    error_count += 1
+                
+                # 更新進度條
+                progress_bar.progress((index + 1) / total_items)
+            
+            # 顯示結果
+            if success_count > 0:
+                st.success(f"✅ 成功刪除 {success_count} 筆假別配額")
+            
+            if error_count > 0:
+                st.error(f"❌ {error_count} 筆假別配額刪除失敗")
+            
+            time.sleep(1)
+            st.rerun()
+    
+    with col2:
+        if st.button("❌ 取消"):
+            st.rerun()
+
 def leave_management_page():
     """請假管理主頁面"""
     st.title("請假管理")
@@ -224,9 +279,23 @@ else:
                             "PersonalLeave": "事假",
                             "SickLeave": "病假",
                         },
-                        # on_select="rerun",
-                        # selection_mode="multi-row"
+                        on_select="rerun",
+                        selection_mode="multi-row"
                         )
+
+    # 處理選擇的行
+    select_entitlements = event.selection.rows
+    filtered_df = df.iloc[select_entitlements]
+
+    if not filtered_df.empty:
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🗑️ 刪除選中的假別配額", type="secondary"):
+                delete_entitlements(filtered_df)
+        
+        with col2:
+            st.info(f"已選擇 {len(filtered_df)} 筆假別配額")
 
     st.markdown("---")
 

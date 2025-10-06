@@ -467,6 +467,12 @@ def update_leave_entitlement(entitlement_id, data):
     resp.raise_for_status()
     return resp.json()
 
+# 刪除假別配額
+def delete_leave_entitlement(entitlement_id):
+    resp = requests.delete(f"{BASE_URL}/leave/entitlements/{entitlement_id}")
+    resp.raise_for_status()
+    return resp.json()
+
 # 根據年資自動計算特別休假天數
 def auto_calculate_special_leave(user_id, year):
     resp = requests.post(f"{BASE_URL}/leave/entitlements/auto-calculate?user_id={user_id}&year={year}")

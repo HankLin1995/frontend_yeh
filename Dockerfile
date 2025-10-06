@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements.txt ./
 
 # Install the required Python packages
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 對於 Debian/Ubuntu 基礎映像
 RUN apt-get update && apt-get install -y libzbar0
