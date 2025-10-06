@@ -3,7 +3,10 @@ import pandas as pd
 import datetime
 import calendar
 import io
-from api import get_cert_expired, get_cases, get_case_statistics, get_equipment_maintenance, get_attendance_by_month,get_worklogs_by_case_id
+from api import get_cert_expired, get_cases, get_case_statistics, get_equipment_maintenance, get_attendance_by_month,get_worklogs_by_case_id, get_all_cases_statistics
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 def export_salary_to_excel(attendance, month):
     """
@@ -249,7 +252,209 @@ def display_case_overview(case_id):
         "LogTime":"時間"
         })
 
-tab1, tab2, tab3 = st.tabs(["⏰ 時效控制", "📊 案件總覽","👥 員工總覽"])
+def display_cost_analysis():
+    """
+    顯示工程成本分析頁面
+    """
+    
+    try:
+        # 先獲取所有案件
+        cases = get_cases()
+        
+        if not cases:
+            st.warning("目前沒有案件資料")
+            return
+        
+        # 為每個案件獲取統計資料
+        all_cases_stats = []
+        
+        for case in cases:
+            try:
+                # 獲取每個案件的統計資料
+                case_stats = get_case_statistics(case['CaseID'])
+                
+                # 建立摘要資料
+                summary = {
+                    'CaseID': case_stats['CaseID'],
+                    'CaseName': case_stats['CaseName'],
+                    'Location': case.get('Location', ''),
+                    'Status': case.get('Status', 'active'),
+                    'TotalMaterialCost': case_stats['TotalMaterialCost'],
+                    'TotalLaborCost': case_stats['TotalLaborCost'],
+                    'TotalWorkHours': case_stats['TotalWorkHours']
+                }
+                
+                all_cases_stats.append(summary)
+                
+            except Exception as e:
+                # 如果某個案件的統計資料獲取失敗，跳過該案件
+                st.warning(f"無法獲取案件 {case['CaseID']} 的統計資料: {e}")
+                continue
+        
+        if not all_cases_stats:
+            st.warning("無法獲取任何案件的統計資料")
+            return
+        
+        # 轉換為 DataFrame
+        df_cases = pd.DataFrame(all_cases_stats)
+        
+        # 計算總成本
+        df_cases['TotalCost'] = df_cases['TotalMaterialCost'] + df_cases['TotalLaborCost']
+        
+        # # 側邊欄篩選器
+        # st.sidebar.markdown("### 🔍 篩選條件")
+        
+        # # 工地篩選
+        # locations = ['全部'] + sorted(df_cases['Location'].unique().tolist())
+        # selected_location = st.sidebar.selectbox("選擇工地", locations)
+        
+        # # 成本範圍篩選
+        # min_cost = int(df_cases['TotalCost'].min())
+        # max_cost = int(df_cases['TotalCost'].max())
+        # cost_range = st.sidebar.slider(
+        #     "成本範圍", 
+        #     min_value=min_cost, 
+        #     max_value=max_cost, 
+        #     value=(min_cost, max_cost),
+        #     format="$%d"
+        # )
+        
+        # # 應用篩選
+        filtered_df = df_cases.copy()
+        # if selected_location != '全部':
+        #     filtered_df = filtered_df[filtered_df['Location'] == selected_location]
+        
+        # filtered_df = filtered_df[
+        #     (filtered_df['TotalCost'] >= cost_range[0]) & 
+        #     (filtered_df['TotalCost'] <= cost_range[1])
+        # ]
+        
+        # if filtered_df.empty:
+        #     st.warning("沒有符合篩選條件的資料")
+        #     return
+        
+        # 總覽儀表板
+        # st.markdown("#### 📊 成本總覽")
+        col1, col2, col3, col4 = st.columns(4,border=True)
+        
+        total_projects = len(filtered_df)
+        total_cost = filtered_df['TotalCost'].sum()
+        avg_cost = filtered_df['TotalCost'].mean()
+        highest_cost = filtered_df['TotalCost'].max()
+        
+        with col1:
+            st.metric("工程數量", f"{total_projects} 個")
+        with col2:
+            st.metric("總成本", f"${total_cost:,.0f}")
+        with col3:
+            st.metric("平均成本", f"${avg_cost:,.0f}")
+        with col4:
+            st.metric("最高成本", f"${highest_cost:,.0f}")
+        
+        st.divider()
+        
+        # 橫向長條圖 - 工程成本比較
+        st.markdown("#### 📊 工程成本比較（材料 vs 人力）")
+        
+        # 準備圖表資料
+        fig = go.Figure()
+        
+        # 材料成本
+        fig.add_trace(go.Bar(
+            name='材料成本',
+            y=filtered_df['CaseName'],
+            x=filtered_df['TotalMaterialCost'],
+            orientation='h',
+            marker_color='#FF6B6B',
+            text=[f'${x:,.0f}' for x in filtered_df['TotalMaterialCost']],
+            textposition='inside'
+        ))
+        
+        # 人力成本
+        fig.add_trace(go.Bar(
+            name='人力成本',
+            y=filtered_df['CaseName'],
+            x=filtered_df['TotalLaborCost'],
+            orientation='h',
+            marker_color='#4ECDC4',
+            text=[f'${x:,.0f}' for x in filtered_df['TotalLaborCost']],
+            textposition='inside'
+        ))
+        
+        fig.update_layout(
+            barmode='stack',
+            title='各工程成本結構比較',
+            xaxis_title='成本金額 ($)',
+            yaxis_title='工程名稱',
+            height=max(400, len(filtered_df) * 40),  # 根據工程數量調整高度
+            showlegend=True,
+            yaxis={'categoryorder': 'total ascending'}  # 按總成本排序
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        st.divider()
+        
+        # 詳細成本控制表格
+        st.markdown("#### 📋 詳細成本明細表")
+        
+        # 準備顯示的資料
+        display_df = filtered_df[[
+            'CaseName', 'Location', 'Status', 
+            'TotalMaterialCost', 'TotalLaborCost', 'TotalCost'
+        ]].copy()
+        
+        # 計算比例
+        display_df['MaterialRatio'] = (display_df['TotalMaterialCost'] / display_df['TotalCost'] * 100).round(1)
+        display_df['LaborRatio'] = (display_df['TotalLaborCost'] / display_df['TotalCost'] * 100).round(1)
+        
+        # 按總成本排序
+        display_df = display_df.sort_values('TotalCost', ascending=False)
+        
+        st.dataframe(
+            display_df,
+            hide_index=True,
+            column_config={
+                "CaseName": st.column_config.TextColumn("工程名稱", width="medium"),
+                "Location": st.column_config.TextColumn("工地位置", width="small"),
+                "Status": st.column_config.TextColumn("狀態", width="small"),
+                "TotalMaterialCost": st.column_config.NumberColumn(
+                    "材料成本", 
+                    format="$%d",
+                    width="small"
+                ),
+                "TotalLaborCost": st.column_config.NumberColumn(
+                    "人力成本", 
+                    format="$%d",
+                    width="small"
+                ),
+                "TotalCost": st.column_config.NumberColumn(
+                    "總成本", 
+                    format="$%d",
+                    width="small"
+                ),
+                "MaterialRatio": st.column_config.ProgressColumn(
+                    "材料比例",
+                    format="%.1f%%",
+                    min_value=0,
+                    max_value=100,
+                    width="small"
+                ),
+                "LaborRatio": st.column_config.ProgressColumn(
+                    "人力比例",
+                    format="%.1f%%",
+                    min_value=0,
+                    max_value=100,
+                    width="small"
+                ),
+            },
+            use_container_width=True
+        )
+        
+    except Exception as e:
+        st.error(f"載入成本資料時發生錯誤: {str(e)}")
+
+tab1, tab2, tab3, tab4 = st.tabs(["⏰ 時效控制", "📊 案件成本","👥 員工總覽", "💰 承攬成本"])
 
 with tab1:
     #證照到期提醒
@@ -421,3 +626,6 @@ with tab3:
             st.info(f"{selected_month} 月份沒有出勤資料")
     except Exception as e:
         st.error(f"取得資料時發生錯誤: {str(e)}")
+
+with tab4:
+    display_cost_analysis()

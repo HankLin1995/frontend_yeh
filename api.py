@@ -552,6 +552,6 @@ def get_all_cases_statistics():
     Returns:
         list: 包含所有案件統計摘要的列表
     """
-    resp = requests.get(f"{BASE_URL}/cases/statistics")
+    resp = requests.get(f"{BASE_URL}/statistics/cases")
     resp.raise_for_status()
     return resp.json()
