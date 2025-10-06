@@ -66,6 +66,7 @@ from api import (
     get_material_borrow_logs,
     get_leave_requests,
     update_certificate,
+    update_certificate_file,
     update_work_hours
 )
 
@@ -306,8 +307,16 @@ def edit_certificate_ui(cert):
     #issue_date_input = st.date_input("發證日 (YYYY-MM-DD)", value=issue_date if issue_date else None)
     expiry_date_input = st.date_input("到期日 (YYYY-MM-DD)", value=expiry_date if expiry_date else None)
     
-    submitted = st.button("更新")
-    if submitted:
+    # 顯示目前的證照圖片
+    st.markdown("#### 目前的證照圖片")
+    st.image(BASE_URL+"/"+cert['certificate_url'], width=300)
+    
+    # 新增上傳新照片的選項
+    st.markdown("#### 上傳新的證照圖片 (可選)")
+    new_file = st.file_uploader("選擇新的證照檔案 (PDF/JPG/PNG)", type=["pdf", "jpg", "jpeg", "png"], key=f"edit_cert_file_{certificate_id}")
+    
+    # 單一更新按鈕
+    if st.button("更新證照", use_container_width=True):
         if not certificate_name:
             st.error("請輸入證照名稱")
             return
@@ -317,9 +326,18 @@ def edit_certificate_ui(cert):
             "certificate_name": certificate_name,
             "expiry_date": expiry_date_input.strftime("%Y-%m-%d") if expiry_date_input else None
         }
-
-        update_certificate(certificate_id, update_data)
-        st.success("證照資料已更新！請重新整理頁面。")
+        
+        # 判斷是否有上傳新檔案
+        if new_file:
+            # 有新檔案：先更新基本資料，再更新檔案
+            update_certificate(certificate_id, update_data)
+            file_bytes = (new_file.name, new_file, new_file.type)
+            update_certificate_file(certificate_id, file_bytes)
+            st.success("證照資料和照片已更新！請重新整理頁面。")
+        else:
+            # 沒有新檔案：只更新基本資料
+            update_certificate(certificate_id, update_data)
+            st.success("證照資料已更新！請重新整理頁面。")
         
         st.rerun()
 

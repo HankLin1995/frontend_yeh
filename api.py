@@ -189,6 +189,19 @@ def update_certificate(certificate_id, data):
     resp.raise_for_status()
     return resp.json()
 
+def update_certificate_file(certificate_id, file):
+    """
+    更新證照檔案
+    Args:
+        certificate_id: 證照ID
+        file: 新的證照檔案 (二進位)
+    """
+    url = f"{BASE_URL}/employees/certificates/{certificate_id}/upload"
+    files = {"file": file}
+    resp = requests.patch(url, files=files)
+    resp.raise_for_status()
+    return resp.json()
+
 def delete_certificate(certificate_id):
 
     resp = requests.delete(f"{BASE_URL}/employees/certificates/{certificate_id}")
